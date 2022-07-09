@@ -3,13 +3,14 @@ CREATE OR REPLACE FUNCTION trigger_add_constraints_from_parent_tables()
 AS
 $$
 DECLARE
-    "reloid"             OID;
-    "reloid_constraints" TEXT[];
-    "table"              OID;
-    "tables"             OID[];
-    "constraint"         TEXT;
-    "constraints"        TEXT[];
-    "obj"                RECORD;
+    "tg_reloid"             OID;
+    "tg_reloid_constraints" TEXT[];
+    "reloid"                OID;
+    "reloids"               OID[];
+    "constraint"            TEXT;
+    "constraints"           TEXT[];
+    "table"                 TEXT;
+    "obj"                   RECORD;
 BEGIN
     FOR "obj" IN SELECT * FROM pg_event_trigger_ddl_commands()
         LOOP
@@ -21,47 +22,49 @@ BEGIN
             RAISE DEBUG 'in_extension = %', "obj".in_extension;
 
             IF obj.command_tag = 'CREATE TABLE' THEN
-                "reloid" = "obj".objid;
+                "tg_reloid" = "obj".objid;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: CREATE TABLE ', "obj".object_identity));
 
-                "tables" = (SELECT array_agg(p.oid)
-                            FROM pg_inherits
-                                     JOIN pg_class AS c ON (inhrelid = c.oid)
-                                     JOIN pg_class as p ON (inhparent = p.oid)
-                            WHERE c.oid = "reloid");
-                RAISE DEBUG USING MESSAGE = (concat('parents: ', COALESCE("tables", '{}')));
+                "reloids" = (SELECT array_agg(p.oid)
+                             FROM pg_inherits
+                                      JOIN pg_class AS c ON (inhrelid = c.oid)
+                                      JOIN pg_class as p ON (inhparent = p.oid)
+                             WHERE c.oid = "tg_reloid");
+                RAISE DEBUG USING MESSAGE = (concat('parents: ', COALESCE("reloids", '{}')));
 
-                "reloid_constraints" = get_constraintdefs("reloid");
-                FOREACH "table" IN ARRAY COALESCE("tables", '{}')
+                "table" = "tg_reloid"::REGCLASS;
+                "tg_reloid_constraints" = get_constraintdefs("tg_reloid");
+                FOREACH "reloid" IN ARRAY COALESCE("reloids", '{}')
                     LOOP
-                        "constraints" = array_except(get_constraintdefs("table"), "reloid_constraints");
+                        "constraints" = array_except(get_constraintdefs("reloid"), "tg_reloid_constraints");
                         FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')
                             LOOP
-                                RAISE NOTICE USING MESSAGE = (concat('FROM PARENT TABLE: ', "table"::REGCLASS));
+                                RAISE NOTICE USING MESSAGE = (concat('FROM PARENT TABLE: ', "reloid"::REGCLASS));
                                 RAISE NOTICE USING MESSAGE = (concat('ADD CONSTRAINT: ', "constraint"));
-                                EXECUTE format('ALTER TABLE %s ADD %s;', "reloid"::REGCLASS, "constraint");
+                                EXECUTE format('ALTER TABLE %s ADD %s;', "table", "constraint");
                             END LOOP;
                     END LOOP;
             ELSEIF obj.command_tag = 'ALTER TABLE' THEN
-                "reloid" = "obj".objid;
+                "tg_reloid" = "obj".objid;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: ALTER TABLE ', "obj".object_identity));
 
-                "tables" = (SELECT array_agg(c.oid)
-                            FROM pg_inherits
-                                     JOIN pg_class AS c ON (inhrelid = c.oid)
-                                     JOIN pg_class as p ON (inhparent = p.oid)
-                            WHERE p.oid = "reloid");
-                RAISE DEBUG USING MESSAGE = (concat('children: ', COALESCE("tables", '{}')));
+                "reloids" = (SELECT array_agg(c.oid)
+                             FROM pg_inherits
+                                      JOIN pg_class AS c ON (inhrelid = c.oid)
+                                      JOIN pg_class as p ON (inhparent = p.oid)
+                             WHERE p.oid = "tg_reloid");
+                RAISE DEBUG USING MESSAGE = (concat('children: ', COALESCE("reloids", '{}')));
 
-                "reloid_constraints" = get_constraintdefs("reloid");
-                FOREACH "table" IN ARRAY COALESCE("tables", '{}')
+                "tg_reloid_constraints" = get_constraintdefs("tg_reloid");
+                FOREACH "reloid" IN ARRAY COALESCE("reloids", '{}')
                     LOOP
-                        "constraints" = array_except("reloid_constraints", get_constraintdefs("table"));
-                        RAISE NOTICE USING MESSAGE = (concat('TO CHILD TABLE: ', "table"::REGCLASS));
+                        "constraints" = array_except("tg_reloid_constraints", get_constraintdefs("reloid"));
+                        "table" = "reloid"::REGCLASS;
+                        RAISE NOTICE USING MESSAGE = (concat('TO CHILD TABLE: ', "table"));
                         FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')
                             LOOP
                                 RAISE NOTICE USING MESSAGE = (concat('ADD CONSTRAINT: ', "constraint"));
-                                EXECUTE format('ALTER TABLE %s ADD %s;', "table"::REGCLASS, "constraint");
+                                EXECUTE format('ALTER TABLE %s ADD %s;', "table", "constraint");
                             END LOOP;
                     END LOOP;
             END IF;
