@@ -1,0 +1,26 @@
+CREATE FUNCTION lang ("value" TEXT)
+    RETURNS BOOLEAN
+AS $$
+    DECLARE
+        "arr" CONSTANT TEXT[] = string_to_array("value", '-');
+        "length" CONSTANT INT = array_length("arr", 1);
+        "has_language" BOOLEAN;
+        "has_script" BOOLEAN;
+        "has_region" BOOLEAN;
+BEGIN
+        IF ("length" IS NULL OR "length" > 3) THEN
+            RETURN FALSE;
+        END IF;
+        "has_language" = "arr"[1] IS NOT NULL;
+        "has_script" = "arr"[2] IS NOT NULL;
+        "has_region" = "arr"[3] IS NOT NULL;
+        RETURN ("has_language" AND language("arr"[1])) AND
+               (NOT ("has_script") OR (script("arr"[2]) OR (region("arr"[2]) AND NOT "has_region"))) AND
+               (NOT ("has_region") OR region("arr"[3]));
+END
+$$
+    LANGUAGE plpgsql
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION lang (TEXT) IS 'RFC 5646';
