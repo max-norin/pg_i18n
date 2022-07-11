@@ -21,10 +21,14 @@ BEGIN
             RAISE DEBUG 'object_identity = %', "obj".object_identity;
             RAISE DEBUG 'in_extension = %', "obj".in_extension;
 
-            IF obj.command_tag = 'CREATE TABLE' THEN
+            IF "obj".in_extension = TRUE THEN
+                CONTINUE; -- TODO checks
+            END IF;
+
+            IF "obj".command_tag = 'CREATE TABLE' THEN
                 "tg_reloid" = "obj".objid;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: CREATE TABLE ', "obj".object_identity));
-
+                -- parent tables of the created table
                 "reloids" = (SELECT array_agg(p.oid)
                              FROM pg_inherits
                                       JOIN pg_class AS c ON (inhrelid = c.oid)
@@ -33,9 +37,11 @@ BEGIN
                 RAISE DEBUG USING MESSAGE = (concat('parents: ', COALESCE("reloids", '{}')));
 
                 "table" = "tg_reloid"::REGCLASS;
+                -- get existing constraints
                 "tg_reloid_constraints" = get_constraintdefs("tg_reloid");
                 FOREACH "reloid" IN ARRAY COALESCE("reloids", '{}')
                     LOOP
+                        -- except existing constraints from parent constraints
                         "constraints" = array_except(get_constraintdefs("reloid"), "tg_reloid_constraints");
                         FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')
                             LOOP
@@ -44,10 +50,10 @@ BEGIN
                                 EXECUTE format('ALTER TABLE %s ADD %s;', "table", "constraint");
                             END LOOP;
                     END LOOP;
-            ELSEIF obj.command_tag = 'ALTER TABLE' THEN
+            ELSEIF "obj".command_tag = 'ALTER TABLE' THEN
                 "tg_reloid" = "obj".objid;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: ALTER TABLE ', "obj".object_identity));
-
+                -- children tables of the altered table
                 "reloids" = (SELECT array_agg(c.oid)
                              FROM pg_inherits
                                       JOIN pg_class AS c ON (inhrelid = c.oid)
@@ -55,9 +61,11 @@ BEGIN
                              WHERE p.oid = "tg_reloid");
                 RAISE DEBUG USING MESSAGE = (concat('children: ', COALESCE("reloids", '{}')));
 
+                -- get existing constraints
                 "tg_reloid_constraints" = get_constraintdefs("tg_reloid");
                 FOREACH "reloid" IN ARRAY COALESCE("reloids", '{}')
                     LOOP
+                        -- except existing constraints from parent constraints
                         "constraints" = array_except("tg_reloid_constraints", get_constraintdefs("reloid"));
                         "table" = "reloid"::REGCLASS;
                         RAISE NOTICE USING MESSAGE = (concat('TO CHILD TABLE: ', "table"));
@@ -69,5 +77,5 @@ BEGIN
                     END LOOP;
             END IF;
         END LOOP;
-END;
+END ;
 $$ LANGUAGE plpgsql;
