@@ -1,15 +1,15 @@
-CREATE OR REPLACE FUNCTION trigger_update_dictionary_view()
+CREATE FUNCTION trigger_update_dictionary_view()
     RETURNS TRIGGER
 AS
 $$
 DECLARE
     "argv"       CONSTANT REGCLASS[] = TG_ARGV;
     "record"              JSONB      = to_jsonb(NEW);
-    "table"      CONSTANT TEXT       = "argv"[1];
-    "pk_name"    CONSTANT TEXT       = get_primary_key_name("table"::REGCLASS::OID);
-    "pk_columns" CONSTANT TEXT[]     = get_primary_key("table"::REGCLASS::OID);
+    "table"      CONSTANT REGCLASS   = "argv"[1];
+    "pk_name"    CONSTANT TEXT       = get_primary_key_name("table");
+    "pk_columns" CONSTANT TEXT[]     = get_primary_key("table");
     "pk_values"           TEXT[];
-    "columns"    CONSTANT TEXT[]     = array_except(get_columns("table"::REGCLASS::OID), "pk_columns");
+    "columns"    CONSTANT TEXT[]     = array_except(get_columns("table"), "pk_columns");
     "values"              TEXT[];
     "column"              TEXT;
 BEGIN

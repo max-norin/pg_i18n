@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE create_dictionary_view("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
+CREATE PROCEDURE create_dictionary_view("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
 AS
 $$
 DECLARE
@@ -35,11 +35,11 @@ BEGIN
         END LOOP;
 
     EXECUTE format('
-        CREATE VIEW %I AS
-        SELECT (bt.*) IS NULL AS "is_default", "langs"."lang", %s
-            FROM %I b
+        CREATE VIEW %1I AS
+        SELECT (bt.*) IS NULL AS "is_default", "langs"."lang", %2s
+            FROM %3I b
             CROSS JOIN "langs"
-            LEFT JOIN %I bt USING ("lang", %s);
+            LEFT JOIN %4I bt USING ("lang", %5s);
     ', "name", array_to_string("columns", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','));
 
     EXECUTE format('
