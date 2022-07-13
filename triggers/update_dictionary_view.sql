@@ -1,20 +1,17 @@
-CREATE FUNCTION trigger_update_dictionary_view()
+CREATE OR REPLACE FUNCTION trigger_update_dictionary_view()
     RETURNS TRIGGER
 AS
 $$
 DECLARE
-    "argv"       CONSTANT REGCLASS[] = TG_ARGV;
-    "record"              JSONB      = to_jsonb(NEW);
-    "table"      CONSTANT REGCLASS   = "argv"[1];
-    "pk_name"    CONSTANT TEXT       = get_primary_key_name("table");
-    "pk_columns" CONSTANT TEXT[]     = get_primary_key("table");
+    "record"     CONSTANT JSONB NOT NULL    = to_jsonb(NEW);
+    "table"      CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
+    "pk_name"    CONSTANT TEXT NOT NULL     = get_primary_key_name("table");
+    "pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("table");
     "pk_values"           TEXT[];
-    "columns"    CONSTANT TEXT[]     = array_except(get_columns("table"), "pk_columns");
+    "columns"    CONSTANT TEXT[] NOT NULL   = array_except(get_columns("table"), "pk_columns");
     "values"              TEXT[];
     "column"              TEXT;
 BEGIN
-    -- RAISE EXCEPTION USING MESSAGE = ("argv"[0] ||' - - ' || );
-
     FOREACH "column" IN ARRAY "pk_columns"
         LOOP
             "pk_values" = array_append("pk_values", format('%L', "record" ->> "column"));
@@ -38,4 +35,3 @@ BEGIN
 END
 $$
     LANGUAGE plpgsql;
-

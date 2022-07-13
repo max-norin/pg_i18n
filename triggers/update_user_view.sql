@@ -3,18 +3,15 @@ CREATE OR REPLACE FUNCTION trigger_update_user_view()
 AS
 $$
 DECLARE
-    "argv"        CONSTANT REGCLASS[] = TG_ARGV;
-    "record"               JSONB      = to_jsonb(NEW);
-    "lb_table"    CONSTANT REGCLASS   = "argv"[0];
-    "lb_columns"  CONSTANT TEXT[]     = array_except(get_columns("lb_table"), get_primary_key("lb_table"));
+    "record"      CONSTANT JSONB NOT NULL    = to_jsonb(NEW);
+    "lb_table"    CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
+    "lb_columns"  CONSTANT TEXT[] NOT NULL   = array_except(get_columns("lb_table"), get_primary_key("lb_table"));
     "lb_values"            TEXT[];
-    "lbt_table"   CONSTANT REGCLASS   = "argv"[1];
-    "lbt_columns" CONSTANT TEXT[]     = array_except(get_columns("lbt_table"), get_primary_key("lbt_table"));
+    "lbt_table"   CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
+    "lbt_columns" CONSTANT TEXT[] NOT NULL   = array_except(get_columns("lbt_table"), get_primary_key("lbt_table"));
     "lbt_values"           TEXT[];
     "column"               TEXT;
 BEGIN
-    -- RAISE EXCEPTION USING MESSAGE = ("argv"[0] ||' - - ' || );
-
     FOREACH "column" IN ARRAY "lb_columns"
         LOOP
             "lb_values" = array_append("lb_values", format('%L', "record" ->> "column"));
