@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION trigger_add_constraints_from_parent_tables()
+CREATE OR REPLACE FUNCTION event_trigger_add_constraints_from_parent_tables()
     RETURNS EVENT_TRIGGER
 AS
 $$
