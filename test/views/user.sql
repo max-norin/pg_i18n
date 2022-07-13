@@ -5,7 +5,7 @@ CREATE TABLE "user"
 ) INHERITS ("lang_base");
 CREATE TABLE "user_trans"
 (
-    "id"    BIGINT NOT NULL REFERENCES "user" ("id"),
+    "id"    BIGINT NOT NULL REFERENCES "user" ("id") ON UPDATE CASCADE,
     "title" VARCHAR(255),
     PRIMARY KEY ("id", "lang")
 ) INHERITS ("lang_base_tran");
