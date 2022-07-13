@@ -1,0 +1,19 @@
+{
+    "name": "pg_i18n",
+    "version": "1.0",
+    "description": "",
+    "type": "module",
+    "scripts": {
+        "build": "node build.js",
+        "format": "node format.js",
+        "pg_format": "pg_format -i -W 100 -U 2 -p 'RAISE (.+?) USING'"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/max-norin/pg_i18n"
+    },
+    "author": "Max Norin",
+    "license": "ISC",
+    "dependencies": {},
+    "devDependencies": {}
+}
