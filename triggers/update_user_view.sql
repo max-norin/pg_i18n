@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION update_user_view()
+CREATE OR REPLACE FUNCTION trigger_update_user_view()
     RETURNS TRIGGER
 AS
 $$

@@ -8,6 +8,7 @@ const files = [
   ...get_files('./domains'),
   ...get_files('./tables'),
   ...get_files('./event_triggers'),
+  ...get_files('./views'),
 ]
 
 let content = ''
