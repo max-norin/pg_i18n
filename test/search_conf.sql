@@ -1,4 +1,4 @@
--- https://postgrespro.ru/docs/postgresql/14/unaccent
+-- https://postgresql.org/docs/current/unaccent.html
 
 
 SELECT *
