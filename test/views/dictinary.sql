@@ -10,7 +10,7 @@ CREATE TABLE "dictionary_trans"
     "title" VARCHAR(255),
     PRIMARY KEY ("lang", "id")
 ) INHERITS ("lang_base_tran");
-CALL create_dictionary_view(NULL::TEXT, 'dictionary'::REGCLASS, NULL::REGCLASS);
+CALL create_dictionary_view(NULL::TEXT, 'dictionary'::REGCLASS, 'dictionary_trans'::REGCLASS);
 
 
 SELECT *

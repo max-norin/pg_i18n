@@ -1,21 +1,17 @@
-CREATE PROCEDURE create_dictionary_view("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
+CREATE OR REPLACE PROCEDURE create_dictionary_view("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
 AS
 $$
 DECLARE
-    "lb_columns"          TEXT[];
-    "lbt_columns"         TEXT[];
-    "columns"             TEXT[];
-    "pk_columns" CONSTANT TEXT[] = get_primary_key("lb_table"::REGCLASS::OID);
-    "column"              TEXT;
+    "name"        CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
+    "lb_columns"  CONSTANT TEXT[] NOT NULL = get_columns("lb_table");
+    "lbt_columns" CONSTANT TEXT[] NOT NULL = get_columns("lbt_table");
+    "pk_columns"  CONSTANT TEXT[] NOT NULL = get_primary_key("lb_table");
+    "columns"              TEXT[];
+    "column"               TEXT;
 BEGIN
     IF ("lb_table" IS NULL) OR ("lbt_table" IS NULL) THEN
         RAISE EXCEPTION USING MESSAGE = '"lb_table" and "lbt_table" cannot be NULL';
     END IF;
-    -- set view name
-    "name" = COALESCE(format_table_name("name"), format_table_name("lb_table", 'v_'));
-    -- get "columns" FROM "lb_table" and "lbt_table"
-    "lb_columns" = get_columns("lb_table");
-    "lbt_columns" = get_columns("lbt_table");
 
     FOREACH "column" IN ARRAY "lb_columns"
         LOOP
