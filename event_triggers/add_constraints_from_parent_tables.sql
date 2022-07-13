@@ -42,7 +42,7 @@ BEGIN
                 FOREACH "relid" IN ARRAY COALESCE("relids", '{}')
                     LOOP
                         -- except existing constraints from parent constraints
-                        "constraints" = array_except(get_constraintdefs("relid"), "tg_relid_constraints");
+                        "constraints" = get_constraintdefs("relid") - "tg_relid_constraints";
                         FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')
                             LOOP
                                 RAISE NOTICE USING MESSAGE = (concat('FROM PARENT TABLE: ', "relid"::REGCLASS));
@@ -65,7 +65,7 @@ BEGIN
                 FOREACH "relid" IN ARRAY COALESCE("relids", '{}')
                     LOOP
                         -- except existing constraints from parent constraints
-                        "constraints" = array_except("tg_relid_constraints", get_constraintdefs("relid"));
+                        "constraints" = "tg_relid_constraints" - get_constraintdefs("relid");
                         "table" = "relid"::REGCLASS;
                         RAISE NOTICE USING MESSAGE = (concat('TO CHILD TABLE: ', "table"));
                         FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')
