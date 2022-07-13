@@ -7,10 +7,10 @@ DECLARE
     "tg_relid_constraints" TEXT[];
     "relid"                OID;
     "relids"               OID[];
-    "constraint"            TEXT;
-    "constraints"           TEXT[];
-    "table"                 TEXT;
-    "obj"                   RECORD;
+    "constraints"          TEXT[];
+    "table"                TEXT;
+    "obj"                  RECORD;
+    "constraint"           TEXT;
 BEGIN
     FOR "obj" IN SELECT * FROM pg_event_trigger_ddl_commands()
         LOOP
@@ -25,15 +25,16 @@ BEGIN
                 CONTINUE; -- TODO checks
             END IF;
 
+            -- TODO ONLY LANG_BASE AND LANG_BASE_TRAN
             IF "obj".command_tag = 'CREATE TABLE' THEN
                 "tg_relid" = "obj".objid;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: CREATE TABLE ', "obj".object_identity));
                 -- parent tables of the created table
                 "relids" = (SELECT array_agg(p.oid)
-                             FROM pg_inherits
-                                      JOIN pg_class AS c ON (inhrelid = c.oid)
-                                      JOIN pg_class as p ON (inhparent = p.oid)
-                             WHERE c.oid = "tg_relid");
+                            FROM pg_inherits
+                                     JOIN pg_class AS c ON (inhrelid = c.oid)
+                                     JOIN pg_class as p ON (inhparent = p.oid)
+                            WHERE c.oid = "tg_relid");
                 RAISE DEBUG USING MESSAGE = (concat('parents: ', COALESCE("relids", '{}')));
                 "table" = "tg_relid"::REGCLASS;
                 -- get existing constraints
@@ -54,10 +55,10 @@ BEGIN
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: ALTER TABLE ', "obj".object_identity));
                 -- children tables of the altered table
                 "relids" = (SELECT array_agg(c.oid)
-                             FROM pg_inherits
-                                      JOIN pg_class AS c ON (inhrelid = c.oid)
-                                      JOIN pg_class as p ON (inhparent = p.oid)
-                             WHERE p.oid = "tg_relid");
+                            FROM pg_inherits
+                                     JOIN pg_class AS c ON (inhrelid = c.oid)
+                                     JOIN pg_class as p ON (inhparent = p.oid)
+                            WHERE p.oid = "tg_relid");
                 RAISE DEBUG USING MESSAGE = (concat('children: ', COALESCE("relids", '{}')));
                 -- get existing constraints
                 "tg_relid_constraints" = get_constraintdefs("tg_relid");
