@@ -3,7 +3,7 @@ CREATE FUNCTION get_columns("reloid" OID)
 AS
 $$
 BEGIN
-    -- https://postgrespro.ru/docs/postgresql/14/catalog-pg-attribute
+    -- https://postgresql.org/docs/current/catalog-pg-attribute.html
     RETURN (SELECT array_agg(a."attname")
             FROM "pg_attribute" AS a
             WHERE "attrelid" = "reloid"
@@ -15,4 +15,4 @@ $$
     STABLE
     RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_columns (OID) IS '';
+COMMENT ON FUNCTION get_columns (OID) IS 'get table columns';

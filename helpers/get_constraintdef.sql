@@ -5,6 +5,7 @@ CREATE FUNCTION get_constraintdefs ("reloid" OID)
     RETURNS TEXT[]
 AS $$
 BEGIN
+    -- https://postgresql.org/docs/current/catalog-pg-constraint.html
     RETURN (
             SELECT array_agg(pg_get_constraintdef("pg_constraint"."oid"::OID, TRUE))
                  FROM "pg_constraint"
@@ -17,4 +18,4 @@ $$
     STABLE
     RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_constraintdefs (OID) IS '';
+COMMENT ON FUNCTION get_constraintdefs (OID) IS 'get table constraint definitions';

@@ -3,8 +3,8 @@ CREATE FUNCTION get_primary_key_name("reloid" OID)
 AS
 $$
 BEGIN
-    -- https://postgrespro.ru/docs/postgresql/14/catalog-pg-index
-    -- https://postgrespro.ru/docs/postgresql/14/catalog-pg-class
+    -- https://postgresql.org/docs/current/catalog-pg-index.html
+    -- https://postgresql.org/docs/current/catalog-pg-class.html
     RETURN (
         SELECT c."relname"
             FROM "pg_class" c
@@ -21,4 +21,4 @@ $$
     STABLE
     RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_primary_key_name (OID) IS '';
+COMMENT ON FUNCTION get_primary_key_name (OID) IS 'get table primary key name';
