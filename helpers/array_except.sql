@@ -1,7 +1,11 @@
-CREATE FUNCTION array_except ("a" ANYARRAY, "b" ANYARRAY)
+CREATE OR REPLACE FUNCTION array_except ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
 AS $$
 BEGIN
+    IF "a" IS NULL THEN
+        RETURN NULL;
+    END IF;
+
     RETURN ARRAY (
                  SELECT *
                  FROM unnest("a")
