@@ -16,6 +16,3 @@ $$
     LANGUAGE plpgsql
     STABLE
     RETURNS NULL ON NULL INPUT;
-
-COMMENT ON FUNCTION format_table_name (TEXT) IS '';
-
