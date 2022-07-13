@@ -6,6 +6,7 @@ const files = [
   ...get_files('./helpers'),
   ...get_files('./rules'),
   ...get_files('./domains'),
+  ...get_files('./tables'),
 ]
 
 let content = ''

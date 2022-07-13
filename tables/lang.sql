@@ -10,10 +10,7 @@ CREATE TABLE "langs"
     "script"    SCRIPT,
     "region"    REGION,
     "is_active" BOOLEAN      NOT NULL DEFAULT FALSE,
-    "title"     VARCHAR(255) NOT NULL UNIQUE
+    "title"     VARCHAR(50) NOT NULL UNIQUE
 );
 
 COMMENT ON TABLE "langs" IS 'RFC 5646';
-
-
--- Может сделать через perform !? функцию, чтобы можно было добавлять?
