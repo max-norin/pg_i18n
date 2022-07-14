@@ -10,6 +10,7 @@ const files = [
   ...get_files('./event_triggers'),
   ...get_files('./views'),
   ...get_files('./triggers'),
+  './init.sql',
 ]
 
 let content = ''
