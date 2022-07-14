@@ -6,7 +6,7 @@ CREATE TABLE "dictionary"
 );
 CREATE TABLE "dictionary_trans"
 (
-    "id"    INTEGER REFERENCES "dictionary" ("id") ON UPDATE CASCADE, -- TODO может запрутить редактировать?
+    "id"    INTEGER NOT NULL REFERENCES "dictionary" ("id") ON UPDATE CASCADE, -- TODO может запрутить редактировать?
     "title" VARCHAR(255),
     PRIMARY KEY ("lang", "id")
 ) INHERITS ("lang_base_tran");

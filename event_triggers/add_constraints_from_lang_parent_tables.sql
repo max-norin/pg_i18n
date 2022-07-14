@@ -1,8 +1,9 @@
-CREATE OR REPLACE FUNCTION event_trigger_add_constraints_from_parent_tables()
+CREATE OR REPLACE FUNCTION dictionaries.event_trigger_add_constraints_from_lang_parent_tables()
     RETURNS EVENT_TRIGGER
 AS
 $$
 DECLARE
+    "parents" CONSTANT     REGCLASS[] = ARRAY ['"lang_base"'::REGCLASS,'"lang_base_tran"'::REGCLASS];
     "tg_relid"             OID;
     "tg_relid_constraints" TEXT[];
     "relid"                OID;
@@ -22,10 +23,9 @@ BEGIN
             RAISE DEBUG 'in_extension = %', "obj".in_extension;
 
             IF "obj".in_extension = TRUE THEN
-                CONTINUE; -- TODO checks
+                CONTINUE;
             END IF;
 
-            -- TODO ONLY LANG_BASE AND LANG_BASE_TRAN
             IF "obj".command_tag = 'CREATE TABLE' THEN
                 "tg_relid" = "obj".objid;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: CREATE TABLE ', "obj".object_identity));
@@ -34,7 +34,8 @@ BEGIN
                             FROM pg_inherits
                                      JOIN pg_class AS c ON (inhrelid = c.oid)
                                      JOIN pg_class as p ON (inhparent = p.oid)
-                            WHERE c.oid = "tg_relid");
+                            WHERE c.oid = "tg_relid"
+                              AND p.oid = ANY ("parents"));
                 RAISE DEBUG USING MESSAGE = (concat('parents: ', COALESCE("relids", '{}')));
                 "table" = "tg_relid"::REGCLASS;
                 -- get existing constraints
@@ -52,6 +53,9 @@ BEGIN
                     END LOOP;
             ELSEIF "obj".command_tag = 'ALTER TABLE' THEN
                 "tg_relid" = "obj".objid;
+                IF NOT ("tg_relid" = ANY ("parents")) THEN
+                    CONTINUE;
+                END IF;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: ALTER TABLE ', "obj".object_identity));
                 -- children tables of the altered table
                 "relids" = (SELECT array_agg(c.oid)
