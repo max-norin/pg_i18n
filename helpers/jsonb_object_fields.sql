@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION jsonb_object_fields("value" JSONB, "paths" TEXT[])
+CREATE FUNCTION jsonb_object_fields("value" JSONB, "paths" TEXT[])
     RETURNS JSONB
 AS
 $$
@@ -7,7 +7,7 @@ BEGIN
 END
 $$
     LANGUAGE plpgsql
-    STABLE
+    IMMUTABLE
     RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION jsonb_object_fields (JSONB, TEXT[]) IS 'get json object fields';

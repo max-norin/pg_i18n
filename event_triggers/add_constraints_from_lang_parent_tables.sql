@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION dictionaries.event_trigger_add_constraints_from_lang_parent_tables()
+CREATE FUNCTION event_trigger_add_constraints_from_lang_parent_tables()
     RETURNS EVENT_TRIGGER
 AS
 $$
@@ -81,4 +81,5 @@ BEGIN
             END IF;
         END LOOP;
 END ;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+    STABLE;

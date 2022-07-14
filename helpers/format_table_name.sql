@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION format_table_name("name" TEXT, "prefix" TEXT = '')
+CREATE FUNCTION format_table_name("name" TEXT, "prefix" TEXT = '')
     RETURNS TEXT
 AS
 $$
@@ -14,5 +14,5 @@ BEGIN
 END
 $$
     LANGUAGE plpgsql
-    STABLE
+    IMMUTABLE
     RETURNS NULL ON NULL INPUT;

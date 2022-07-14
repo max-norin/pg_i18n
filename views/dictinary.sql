@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE create_dictionary_view("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
+CREATE PROCEDURE create_dictionary_view("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
 AS
 $$
 DECLARE

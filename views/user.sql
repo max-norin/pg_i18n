@@ -32,5 +32,3 @@ BEGIN
 END
 $$
     LANGUAGE plpgsql;
-
-COMMENT ON PROCEDURE create_user_view (TEXT, REGCLASS, REGCLASS) IS '';
