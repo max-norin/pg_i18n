@@ -6,7 +6,7 @@ CREATE TABLE "dictionary"
 );
 CREATE TABLE "dictionary_trans"
 (
-    "id"    INTEGER NOT NULL REFERENCES "dictionary" ("id") ON UPDATE CASCADE, -- TODO может запрутить редактировать?
+    "id"    INTEGER NOT NULL REFERENCES "dictionary" ("id") ON UPDATE CASCADE,
     "title" VARCHAR(255),
     PRIMARY KEY ("lang", "id")
 ) INHERITS ("lang_base_tran");
@@ -15,3 +15,5 @@ CALL create_dictionary_view(NULL::TEXT, 'dictionary'::REGCLASS, 'dictionary_tran
 
 SELECT *
 FROM "v_dictionary";
+
+
