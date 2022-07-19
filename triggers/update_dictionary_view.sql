@@ -56,5 +56,6 @@ BEGIN
 END
 $$
     LANGUAGE plpgsql
-    STABLE;
+    VOLATILE
+    SECURITY DEFINER;
 
