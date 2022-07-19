@@ -10,4 +10,5 @@ SELECT '{
     "c": "C"
 }'::JSONB -> NULL::TEXT[];
 
-SELECT NULL::JSONB -> ARRAY ['c','c','a'];
+SELECT NULL::JSONB -> ARRAY['c', 'c', 'a'];
+
