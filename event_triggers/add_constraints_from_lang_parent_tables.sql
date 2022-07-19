@@ -2,15 +2,15 @@ CREATE FUNCTION event_trigger_add_constraints_from_lang_parent_tables ()
     RETURNS EVENT_TRIGGER
     AS $$
 DECLARE
-    "parents" CONSTANT REGCLASS[] = ARRAY['"lang_base"'::REGCLASS, '"lang_base_tran"'::REGCLASS];
-    "tg_relid" OID;
+    "parents" CONSTANT     REGCLASS[] = ARRAY ['"lang_base"'::REGCLASS, '"lang_base_tran"'::REGCLASS];
+    "tg_relid"             OID;
     "tg_relid_constraints" TEXT[];
-    "relid" OID;
-    "relids" OID[];
-    "constraints" TEXT[];
-    "table" TEXT;
-    "obj" RECORD;
-    "constraint" TEXT;
+    "relid"                OID;
+    "relids"               OID[];
+    "constraints"          TEXT[];
+    "table"                TEXT;
+    "obj"                  RECORD;
+    "constraint"           TEXT;
 BEGIN
     FOR "obj" IN
     SELECT *
