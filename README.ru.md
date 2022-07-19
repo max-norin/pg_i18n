@@ -153,10 +153,10 @@ CREATE TABLE "user_trans"
 При желании триггер можно отключить или удалить из расширения.
 
 ```postgresql
--- https://postgresql.org/docs/current/sql-altereventtrigger.html
-    ALTER EVENT TRIGGER add_constraints_from_lang_parent_tables DISABLE;
--- https://postgresql.org/docs/current/sql-alterextension.html
+ALTER EVENT TRIGGER add_constraints_from_lang_parent_tables DISABLE;
+-- https://postgresql.org/docs/current/sql-altereventtrigger.html 
 ALTER EXTENSION pg_i18n DROP EVENT TRIGGER add_constraints_from_lang_parent_tables;
+-- https://postgresql.org/docs/current/sql-alterextension.html
 ```
 
 Для удобства получения информации можно создать представления. В расширении есть две процедуры

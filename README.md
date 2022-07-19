@@ -156,10 +156,10 @@ the inherited tables `"lang_base"` `"lang_base_tran"`.
 If desired, the trigger can be disabled or removed from the extension.
 
 ```postgresql
--- https://postgresql.org/docs/current/sql-altereventtrigger.html
 ALTER EVENT TRIGGER add_constraints_from_lang_parent_tables DISABLE;
--- https://postgresql.org/docs/current/sql-alterextension.html
+-- https://postgresql.org/docs/current/sql-altereventtrigger.html 
 ALTER EXTENSION pg_i18n DROP EVENT TRIGGER add_constraints_from_lang_parent_tables;
+-- https://postgresql.org/docs/current/sql-alterextension.html
 ```
 
 You can create views to make it easier to select data. To do this, the extension has two procedures,
