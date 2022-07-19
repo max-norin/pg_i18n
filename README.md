@@ -157,7 +157,7 @@ If desired, the trigger can be disabled or removed from the extension.
 
 ```postgresql
 -- https://postgresql.org/docs/current/sql-altereventtrigger.html
-    ALTER EVENT TRIGGER add_constraints_from_lang_parent_tables DISABLE;
+ALTER EVENT TRIGGER add_constraints_from_lang_parent_tables DISABLE;
 -- https://postgresql.org/docs/current/sql-alterextension.html
 ALTER EXTENSION pg_i18n DROP EVENT TRIGGER add_constraints_from_lang_parent_tables;
 ```
