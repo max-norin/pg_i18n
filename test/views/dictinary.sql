@@ -1,16 +1,25 @@
 CREATE TABLE "dictionary" (
-    "id" SERIAL PRIMARY KEY, "title" VARCHAR(255) NOT NULL, "is_active" BOOLEAN DEFAULT TRUE
+    "id" SERIAL PRIMARY KEY,
+    "title" VARCHAR(255) NOT NULL,
+    "is_active" BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE "dictionary_trans" (
-    "id" INTEGER NOT NULL REFERENCES "dictionary" ("id") ON UPDATE CASCADE, "title" VARCHAR(255), PRIMARY KEY ("lang", "id")
+    "id" INTEGER NOT NULL REFERENCES "dictionary" ("id") ON UPDATE CASCADE,
+    "title" VARCHAR(255), PRIMARY KEY ("lang", "id")
 )
-INHERITS (
-    "lang_base_tran"
-);
+INHERITS ("lang_base_tran");
 
 CALL create_dictionary_view (NULL::TEXT, 'dictionary'::REGCLASS, 'dictionary_trans'::REGCLASS);
 
 SELECT *
 FROM "v_dictionary";
 
+ALTER EVENT TRIGGER add_constraints_from_lang_parent_tables ENABLE ;
+
+
+SELECT array_agg(p.oid)
+FROM pg_inherits
+         JOIN pg_class AS c ON (inhrelid = c.oid)
+         JOIN pg_class AS p ON (inhparent = p.oid)
+WHERE c.oid = 'dictionary_trans'::regclass
