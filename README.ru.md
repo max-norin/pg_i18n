@@ -117,7 +117,7 @@ CREATE TABLE "languages"
     "code"  VARCHAR(11) NOT NULL UNIQUE,
     "title" VARCHAR(50) NOT NULL UNIQUE
 );
--- основая таблица
+-- основная таблица
 CREATE TABLE "user"
 (
     "id"       SERIAL PRIMARY KEY,
@@ -169,7 +169,7 @@ ALTER EXTENSION pg_i18n DROP EVENT TRIGGER add_constraints_from_lang_parent_tabl
 - Второй параметр - таблица с основными данными.
 - Третий параметр - таблица с переводимыми данными.
 
-В процедурах сойдется представление и назначаются триггеры.
+В процедурах создается представление и назначаются триггеры.
 В `create_dictionary_view` триггер на обновление,
 в `create_user_view` триггер на вставку и обновление.
 
@@ -183,7 +183,7 @@ CREATE INDEX user_trans_title_idx ON "user_trans" USING GIN (to_tsvector("lang",
 ```
 
 Есть обходной пусть - создать копии уже готовых конфигураций на используемый языковой тег.
-После чего будет корректное использование идекса, указанного выше.
+После чего будет корректное использование индекса, указанного выше.
 
 ```postgresql
 CREATE TEXT SEARCH CONFIGURATION public."ru" ( COPY = pg_catalog.russian );
@@ -257,7 +257,7 @@ GRANT UPDATE, SELECT ON TABLE "user" TO "test_i18n";
 GRANT INSERT, UPDATE, SELECT ON TABLE "user_trans" TO "test_i18n";
 ```
 
-Меняем текущего пользователя на нового пользователя или 
+Меняем текущего пользователя на нового пользователя или
 подключаемся к базе с помощью нового пользователя.
 
 ```postgresql
@@ -296,7 +296,7 @@ VALUES (DEFAULT, 'ru', 'max', 'ru', 'Макс');
     - [get_primary_key](./helpers/get_primary_key.sql)
     - [get_primary_key_name](./helpers/get_primary_key_name.sql)
     - [jsonb_object_fields](./helpers/jsonb_object_fields.sql)
-- `rules/*.sql` используемые правила для доменов
+- `rules/*.sql` правила для доменов
     - [lang](./rules/lang.sql)
     - [language](./rules/language.sql)
     - [region](./rules/region.sql)
