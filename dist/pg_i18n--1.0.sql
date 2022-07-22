@@ -203,7 +203,7 @@ CREATE FUNCTION language ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
-    RETURN ("value" ~* '^[a-z]{2,3}$');
+    RETURN ("value" ~ '^[a-z]{2,3}$');
 END
 $$
 LANGUAGE plpgsql
@@ -219,7 +219,7 @@ CREATE FUNCTION region ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
-    RETURN ("value" ~* '^[A-Z]{2}$');
+    RETURN ("value" ~ '^[A-Z]{2}$');
 END
 $$
 LANGUAGE plpgsql
@@ -235,7 +235,7 @@ CREATE FUNCTION script ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
-    RETURN ("value" ~* '^[A-Z][a-z]{3}$');
+    RETURN ("value" ~ '^[A-Z][a-z]{3}$');
 END
 $$
 LANGUAGE plpgsql
