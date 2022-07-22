@@ -54,7 +54,7 @@ RETURNS NULL ON NULL INPUT;
 /*
 =================== GET_COLUMNS =================== 
 */
-CREATE FUNCTION get_columns ("reloid" OID)
+CREATE FUNCTION get_columns ("reloid" OID, "has_generated_column" BOOLEAN = TRUE)
     RETURNS TEXT[]
     AS $$
 BEGIN
@@ -64,6 +64,7 @@ BEGIN
         FROM "pg_attribute" AS a
         WHERE "attrelid" = "reloid"
             AND a."attnum" > 0
+            AND ("has_generated_column" OR a.attgenerated = '')
             AND NOT a.attisdropped);
 END
 $$
@@ -411,7 +412,7 @@ VOLATILE;
 /*
 =================== DICTINARY =================== 
 */
-CREATE PROCEDURE create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
+CREATE PROCEDURE create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL)
     AS $$
 DECLARE
     "name"        CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
@@ -432,13 +433,17 @@ BEGIN
             "columns" = array_append("columns", format('b.%1$I', "column"));
         END IF;
     END LOOP;
+    IF "where" IS NULL THEN
+        "where" = 'TRUE';
+    END IF;
     EXECUTE format('
         CREATE VIEW %1s AS
         SELECT (bt.*) IS NULL AS "is_default", "langs"."lang", %2s
             FROM %3s b
             CROSS JOIN "langs"
-            LEFT JOIN %4s bt USING ("lang", %5s);
-    ', "name", array_to_string("columns", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','));
+            LEFT JOIN %4s bt USING ("lang", %5s)
+            WHERE %6s;
+    ', "name", array_to_string("columns" || "select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
     EXECUTE format('
         CREATE TRIGGER "update"
             INSTEAD OF UPDATE
@@ -452,7 +457,7 @@ LANGUAGE plpgsql;
 /*
 =================== USER =================== 
 */
-CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
+CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL)
     AS $$
 DECLARE
     "name"       CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
@@ -461,12 +466,16 @@ BEGIN
     IF ("lb_table" IS NULL) OR ("lbt_table" IS NULL) THEN
         RAISE EXCEPTION USING MESSAGE = '"lb_table" and "lbt_table" cannot be NULL';
     END IF;
+    IF "where" IS NULL THEN
+        "where" = 'TRUE';
+    END IF;
     EXECUTE format('
         CREATE VIEW %1s AS
-        SELECT (b."default_lang" = bt."lang") IS TRUE AS "is_default", *
-            FROM %2s b
-            LEFT JOIN %3s bt USING (%s);
-    ', "name", "lb_table", "lbt_table", array_to_string("pk_columns", ','));
+        SELECT (b."default_lang" = bt."lang") IS TRUE AS "is_default", %2s
+            FROM %3s b
+            LEFT JOIN %4s bt USING (%5s)
+            WHERE %6s;
+    ', "name", array_to_string(ARRAY ['*']::TEXT[] || "select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
     EXECUTE format('
         CREATE TRIGGER "insert"
             INSTEAD OF INSERT
@@ -494,10 +503,10 @@ DECLARE
     "lb_record"              JSONB NOT NULL    = '{}';
     "lb_table"      CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
     "lb_pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("lb_table");
-    "lb_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lb_table") - "lb_pk_columns";
+    "lb_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lb_table", FALSE) - "lb_pk_columns";
     "lb_values"              TEXT[];
     "lbt_table"     CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
-    "lbt_columns"   CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table");
+    "lbt_columns"   CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table", FALSE);
     "lbt_values"             TEXT[];
     "column"                 TEXT;
 BEGIN
@@ -545,13 +554,13 @@ DECLARE
     "lbt_pk_name"    CONSTANT TEXT NOT NULL     = get_primary_key_name("lbt_table");
     "lbt_pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("lbt_table");
     "lbt_pk_values"           TEXT[];
-    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table") - "lbt_pk_columns";
+    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table", FALSE) - "lbt_pk_columns";
     "lbt_values"              TEXT[];
     "lb_record"               JSONB NOT NULL    = '{}';
     "lb_table"       CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
     "lb_pk_columns"  CONSTANT TEXT[] NOT NULL   = get_primary_key("lb_table");
     "lb_pk_values"            TEXT[];
-    "lb_columns"     CONSTANT TEXT[] NOT NULL   = get_columns("lb_table") - "lbt_columns";
+    "lb_columns"     CONSTANT TEXT[] NOT NULL   = get_columns("lb_table", FALSE) - "lbt_columns";
     "lb_values"               TEXT[];
     "column"                  TEXT;
 BEGIN
@@ -566,7 +575,7 @@ BEGIN
         array_to_string("lb_values", ','), array_to_string("lb_pk_columns", ','),
         array_to_string("lb_pk_values", ','), "lb_table"
     ) INTO "lb_record";
-    "new_record" = "new_record" || ("lb_record" -> "lb_columns");
+    "new_record" = "new_record" || ("lb_record" -> ("lb_columns" || "lb_pk_columns"));
     FOREACH "column" IN ARRAY "lbt_pk_columns" LOOP
         "lbt_pk_values" = array_append("lbt_pk_values", format('%L', "new_record" ->> "column"));
     END LOOP;
@@ -602,12 +611,12 @@ DECLARE
     "lb_table"       CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
     "lb_pk_columns"  CONSTANT TEXT[] NOT NULL   = get_primary_key("lb_table");
     "lb_pk_values"            TEXT[];
-    "lb_columns"     CONSTANT TEXT[] NOT NULL   = get_columns("lb_table");
+    "lb_columns"     CONSTANT TEXT[] NOT NULL   = get_columns("lb_table", FALSE);
     "lb_values"               TEXT[];
     "lbt_table"      CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
     "lbt_pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("lbt_table");
     "lbt_pk_values"           TEXT[];
-    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table");
+    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table", FALSE);
     "lbt_values"              TEXT[];
     "column"                  TEXT;
 BEGIN
