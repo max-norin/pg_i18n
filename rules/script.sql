@@ -2,7 +2,7 @@ CREATE FUNCTION script ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
-    RETURN ("value" ~* '^[A-Z][a-z]{3}$');
+    RETURN ("value" ~ '^[A-Z][a-z]{3}$');
 END
 $$
 LANGUAGE plpgsql

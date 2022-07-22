@@ -2,7 +2,7 @@ CREATE FUNCTION region ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
-    RETURN ("value" ~* '^[A-Z]{2}$');
+    RETURN ("value" ~ '^[A-Z]{2}$');
 END
 $$
 LANGUAGE plpgsql
