@@ -1,4 +1,4 @@
-CREATE FUNCTION get_columns ("reloid" OID)
+CREATE FUNCTION get_columns ("reloid" OID, "has_generated_column" BOOLEAN = TRUE)
     RETURNS TEXT[]
     AS $$
 BEGIN
@@ -8,6 +8,7 @@ BEGIN
         FROM "pg_attribute" AS a
         WHERE "attrelid" = "reloid"
             AND a."attnum" > 0
+            AND ("has_generated_column" OR a.attgenerated = '')
             AND NOT a.attisdropped);
 END
 $$
