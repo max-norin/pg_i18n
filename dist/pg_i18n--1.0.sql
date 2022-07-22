@@ -72,7 +72,7 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_columns (OID) IS 'get table columns';
+COMMENT ON FUNCTION get_columns (OID, BOOLEAN) IS 'get table columns';
 
 /*
 =================== GET_CONSTRAINTDEF =================== 
