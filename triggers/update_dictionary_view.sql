@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION dictionaries.trigger_update_dictionary_view ()
+CREATE FUNCTION trigger_update_dictionary_view ()
     RETURNS TRIGGER
     AS $$
 DECLARE
