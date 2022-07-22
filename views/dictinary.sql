@@ -1,4 +1,4 @@
-CREATE PROCEDURE create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS)
+CREATE PROCEDURE create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL)
     AS $$
 DECLARE
     "name"        CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
@@ -19,13 +19,17 @@ BEGIN
             "columns" = array_append("columns", format('b.%1$I', "column"));
         END IF;
     END LOOP;
+    IF "where" IS NULL THEN
+        "where" = 'TRUE';
+    END IF;
     EXECUTE format('
         CREATE VIEW %1s AS
         SELECT (bt.*) IS NULL AS "is_default", "langs"."lang", %2s
             FROM %3s b
             CROSS JOIN "langs"
-            LEFT JOIN %4s bt USING ("lang", %5s);
-    ', "name", array_to_string("columns", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','));
+            LEFT JOIN %4s bt USING ("lang", %5s)
+            WHERE %6s;
+    ', "name", array_to_string("columns" || "select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
     EXECUTE format('
         CREATE TRIGGER "update"
             INSTEAD OF UPDATE
