@@ -1,4 +1,4 @@
-CREATE FUNCTION trigger_update_dictionary_view ()
+CREATE OR REPLACE FUNCTION dictionaries.trigger_update_dictionary_view ()
     RETURNS TRIGGER
     AS $$
 DECLARE
@@ -8,13 +8,13 @@ DECLARE
     "lbt_pk_name"    CONSTANT TEXT NOT NULL     = get_primary_key_name("lbt_table");
     "lbt_pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("lbt_table");
     "lbt_pk_values"           TEXT[];
-    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table") - "lbt_pk_columns";
+    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table", FALSE) - "lbt_pk_columns";
     "lbt_values"              TEXT[];
     "lb_record"               JSONB NOT NULL    = '{}';
     "lb_table"       CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
     "lb_pk_columns"  CONSTANT TEXT[] NOT NULL   = get_primary_key("lb_table");
     "lb_pk_values"            TEXT[];
-    "lb_columns"     CONSTANT TEXT[] NOT NULL   = get_columns("lb_table") - "lbt_columns";
+    "lb_columns"     CONSTANT TEXT[] NOT NULL   = get_columns("lb_table", FALSE) - "lbt_columns";
     "lb_values"               TEXT[];
     "column"                  TEXT;
 BEGIN
@@ -29,7 +29,7 @@ BEGIN
         array_to_string("lb_values", ','), array_to_string("lb_pk_columns", ','),
         array_to_string("lb_pk_values", ','), "lb_table"
     ) INTO "lb_record";
-    "new_record" = "new_record" || ("lb_record" -> "lb_columns");
+    "new_record" = "new_record" || ("lb_record" -> ("lb_columns" || "lb_pk_columns"));
     FOREACH "column" IN ARRAY "lbt_pk_columns" LOOP
         "lbt_pk_values" = array_append("lbt_pk_values", format('%L', "new_record" ->> "column"));
     END LOOP;
