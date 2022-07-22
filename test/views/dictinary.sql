@@ -14,12 +14,3 @@ CALL create_dictionary_view (NULL::TEXT, 'dictionary'::REGCLASS, 'dictionary_tra
 
 SELECT *
 FROM "v_dictionary";
-
-ALTER EVENT TRIGGER add_constraints_from_lang_parent_tables ENABLE ;
-
-
-SELECT array_agg(p.oid)
-FROM pg_inherits
-         JOIN pg_class AS c ON (inhrelid = c.oid)
-         JOIN pg_class AS p ON (inhparent = p.oid)
-WHERE c.oid = 'dictionary_trans'::regclass
