@@ -96,6 +96,28 @@ CREATE TABLE "user_trans"
 CALL create_user_view('v_user'::TEXT, '"user"'::REGCLASS, 'user_trans'::REGCLASS);
 ```
 
+#### User columns
+
+For the create_dictionary_view() function, you can specify user set of columns, different from the standard set.
+This is done using the third parameter, you need to specify an array of column values.
+
+```postgresql
+CALL create_user_view(
+        'v_users'::TEXT,
+        'users'::REGCLASS,
+        'user_trans'::REGCLASS,
+        ARRAY ['id', 'b.nickname', 'bt.title']::TEXT[]
+  );
+-- OR using get_columns() function
+CALL create_user_view(
+        'v_users'::TEXT,
+        'users'::REGCLASS,
+        'user_trans'::REGCLASS,
+        get_columns('users'::REGCLASS, TRUE, 'b') ||
+        (get_columns('user_trans'::REGCLASS) - ARRAY ['id', 'created_at', 'updated_at']::TEXT[])
+    );
+```
+
 ## Domains
 
 The extension has domains used to define the `"langs"` table.

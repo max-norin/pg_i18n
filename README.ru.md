@@ -93,6 +93,29 @@ CREATE TABLE "user_trans"
 CALL create_user_view('v_user'::TEXT, '"user"'::REGCLASS, 'user_trans'::REGCLASS);
 ```
 
+#### Пользовательские колонки
+
+Для функции `create_dictionary_view()` можно указать свой набор колонок отличный от стандартного набора. 
+Это делается с помощью третьего параметра, нужно указать массив значений колонок.
+
+```postgresql
+CALL create_user_view(
+        'v_users'::TEXT,
+        'users'::REGCLASS,
+        'user_trans'::REGCLASS,
+        ARRAY ['id', 'b.nickname', 'bt.title']::TEXT[]
+  );
+-- ИЛИ С помощью функции get_columns()
+CALL create_user_view(
+        'v_users'::TEXT,
+        'users'::REGCLASS,
+        'user_trans'::REGCLASS,
+        get_columns('users'::REGCLASS, TRUE, 'b') ||
+        (get_columns('user_trans'::REGCLASS) - ARRAY ['id', 'created_at', 'updated_at']::TEXT[])
+    );
+```
+
+
 ## Домены
 
 Расширение имеет домены используемые для определения таблицы `"langs"`.
