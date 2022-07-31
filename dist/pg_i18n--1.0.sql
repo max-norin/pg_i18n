@@ -4,16 +4,19 @@
 CREATE FUNCTION array_except ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
     AS $$
+DECLARE
+    "length" CONSTANT INT = array_length("b", 1);
+    "index" INT;
 BEGIN
     IF "a" IS NULL THEN
         RETURN NULL;
     END IF;
-    RETURN ARRAY (
-        SELECT *
-        FROM unnest("a")
-        EXCEPT
-        SELECT *
-        FROM unnest("b"));
+    "index" = 1;
+    WHILE "index" <= "length" LOOP
+            "a" = array_remove("a","b"["index"]);
+            "index" = "index" + 1;
+        END LOOP;
+    RETURN "a";
 END;
 $$
 LANGUAGE plpgsql
@@ -54,15 +57,15 @@ RETURNS NULL ON NULL INPUT;
 /*
 =================== GET_COLUMNS =================== 
 */
-CREATE FUNCTION get_columns ("reloid" OID, "has_generated_column" BOOLEAN = TRUE)
+CREATE FUNCTION get_columns ("relid" OID, "has_generated_column" BOOLEAN = TRUE, "rel" TEXT = '')
     RETURNS TEXT[]
     AS $$
 BEGIN
     -- https://postgresql.org/docs/current/catalog-pg-attribute.html
     RETURN (
-        SELECT array_agg(a."attname")
+        SELECT array_agg(CASE WHEN length("rel") > 0 THEN format('%s.%I', "rel", a."attname") ELSE a."attname" END)
         FROM "pg_attribute" AS a
-        WHERE "attrelid" = "reloid"
+        WHERE "attrelid" = "relid"
             AND a."attnum" > 0
             AND ("has_generated_column" OR a.attgenerated = '')
             AND NOT a.attisdropped);
@@ -72,14 +75,14 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_columns (OID, BOOLEAN) IS 'get table columns';
+COMMENT ON FUNCTION get_columns (OID, BOOLEAN, TEXT) IS 'get table columns';
 
 /*
 =================== GET_CONSTRAINTDEF =================== 
 */
 -- https://www.postgresql.org/docs/current/sql-execute.html
 -- https://www.postgresql.org/docs/current/sql-prepare.html
-CREATE FUNCTION get_constraintdefs ("reloid" OID)
+CREATE FUNCTION get_constraintdefs ("relid" OID)
     RETURNS TEXT[]
     AS $$
 BEGIN
@@ -87,7 +90,7 @@ BEGIN
     RETURN (
         SELECT array_agg(pg_get_constraintdef("pg_constraint"."oid"::OID, TRUE))
         FROM "pg_constraint"
-        WHERE "pg_constraint"."conrelid" = "reloid"
+        WHERE "pg_constraint"."conrelid" = "relid"
             AND "pg_constraint"."contype" IN ('f', 'p', 'u'));
 END
 $$
@@ -100,7 +103,7 @@ COMMENT ON FUNCTION get_constraintdefs (OID) IS 'get table constraint definition
 /*
 =================== GET_PRIMARY_KEY =================== 
 */
-CREATE FUNCTION get_primary_key ("reloid" OID)
+CREATE FUNCTION get_primary_key ("relid" OID)
     RETURNS TEXT[]
     AS $$
 BEGIN
@@ -111,7 +114,7 @@ BEGIN
         FROM "pg_index" i
             INNER JOIN "pg_attribute" a ON i."indrelid" = a."attrelid"
                 AND a."attnum" = ANY (i."indkey")
-        WHERE i."indrelid" = "reloid"
+        WHERE i."indrelid" = "relid"
             AND i."indisprimary");
 END
 $$
@@ -124,7 +127,7 @@ COMMENT ON FUNCTION get_primary_key (OID) IS 'get table primary key columns';
 /*
 =================== GET_PRIMARY_KEY_NAME =================== 
 */
-CREATE FUNCTION get_primary_key_name ("reloid" OID)
+CREATE FUNCTION get_primary_key_name ("relid" OID)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -136,7 +139,7 @@ BEGIN
         WHERE c."oid" = (
                 SELECT i."indexrelid"
                 FROM "pg_index" i
-                WHERE i."indrelid" = "reloid"
+                WHERE i."indrelid" = "relid"
                     AND i."indisprimary"));
 END
 $$
@@ -412,7 +415,7 @@ VOLATILE;
 /*
 =================== DICTINARY =================== 
 */
-CREATE PROCEDURE create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL)
+CREATE PROCEDURE create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "where" TEXT = NULL)
     AS $$
 DECLARE
     "name"        CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
@@ -443,7 +446,7 @@ BEGIN
             CROSS JOIN "langs"
             LEFT JOIN %4s bt USING ("lang", %5s)
             WHERE %6s;
-    ', "name", array_to_string("columns" || "select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
+    ', "name", array_to_string("columns", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
     EXECUTE format('
         CREATE TRIGGER "update"
             INSTEAD OF UPDATE
@@ -457,7 +460,7 @@ LANGUAGE plpgsql;
 /*
 =================== USER =================== 
 */
-CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL)
+CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{*}', "where" TEXT = NULL)
     AS $$
 DECLARE
     "name"       CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
@@ -475,7 +478,7 @@ BEGIN
             FROM %3s b
             LEFT JOIN %4s bt USING (%5s)
             WHERE %6s;
-    ', "name", array_to_string(ARRAY ['*']::TEXT[] || "select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
+    ', "name", array_to_string("select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
     EXECUTE format('
         CREATE TRIGGER "insert"
             INSTEAD OF INSERT
