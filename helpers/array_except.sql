@@ -1,16 +1,19 @@
 CREATE FUNCTION array_except ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
     AS $$
+DECLARE
+    "length" CONSTANT INT = array_length("b", 1);
+    "index" INT;
 BEGIN
     IF "a" IS NULL THEN
         RETURN NULL;
     END IF;
-    RETURN ARRAY (
-        SELECT *
-        FROM unnest("a")
-        EXCEPT
-        SELECT *
-        FROM unnest("b"));
+    "index" = 1;
+    WHILE "index" <= "length" LOOP
+            "a" = array_remove("a","b"["index"]);
+            "index" = "index" + 1;
+        END LOOP;
+    RETURN "a";
 END;
 $$
 LANGUAGE plpgsql
