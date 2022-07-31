@@ -1,4 +1,4 @@
-CREATE FUNCTION get_primary_key ("reloid" OID)
+CREATE FUNCTION get_primary_key ("relid" OID)
     RETURNS TEXT[]
     AS $$
 BEGIN
@@ -9,7 +9,7 @@ BEGIN
         FROM "pg_index" i
             INNER JOIN "pg_attribute" a ON i."indrelid" = a."attrelid"
                 AND a."attnum" = ANY (i."indkey")
-        WHERE i."indrelid" = "reloid"
+        WHERE i."indrelid" = "relid"
             AND i."indisprimary");
 END
 $$

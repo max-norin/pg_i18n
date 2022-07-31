@@ -1,4 +1,4 @@
-CREATE FUNCTION get_primary_key_name ("reloid" OID)
+CREATE FUNCTION get_primary_key_name ("relid" OID)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -10,7 +10,7 @@ BEGIN
         WHERE c."oid" = (
                 SELECT i."indexrelid"
                 FROM "pg_index" i
-                WHERE i."indrelid" = "reloid"
+                WHERE i."indrelid" = "relid"
                     AND i."indisprimary"));
 END
 $$

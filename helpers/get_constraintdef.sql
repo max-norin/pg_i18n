@@ -1,6 +1,6 @@
 -- https://www.postgresql.org/docs/current/sql-execute.html
 -- https://www.postgresql.org/docs/current/sql-prepare.html
-CREATE FUNCTION get_constraintdefs ("reloid" OID)
+CREATE FUNCTION get_constraintdefs ("relid" OID)
     RETURNS TEXT[]
     AS $$
 BEGIN
@@ -8,7 +8,7 @@ BEGIN
     RETURN (
         SELECT array_agg(pg_get_constraintdef("pg_constraint"."oid"::OID, TRUE))
         FROM "pg_constraint"
-        WHERE "pg_constraint"."conrelid" = "reloid"
+        WHERE "pg_constraint"."conrelid" = "relid"
             AND "pg_constraint"."contype" IN ('f', 'p', 'u'));
 END
 $$
