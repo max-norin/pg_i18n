@@ -1,4 +1,4 @@
-CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL)
+CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{*}', "where" TEXT = NULL)
     AS $$
 DECLARE
     "name"       CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
@@ -16,7 +16,7 @@ BEGIN
             FROM %3s b
             LEFT JOIN %4s bt USING (%5s)
             WHERE %6s;
-    ', "name", array_to_string(ARRAY ['*']::TEXT[] || "select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
+    ', "name", array_to_string("select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
     EXECUTE format('
         CREATE TRIGGER "insert"
             INSTEAD OF INSERT
