@@ -156,8 +156,7 @@ CREATE FUNCTION jsonb_object_fields ("value" JSONB, "paths" TEXT[])
     RETURNS JSONB
     AS $$
 BEGIN
-    RETURN "value" - (ARRAY (
-            SELECT jsonb_object_keys("value")) - "paths");
+    RETURN "value" - (ARRAY (SELECT jsonb_object_keys("value")) - "paths");
 END
 $$
 LANGUAGE plpgsql
@@ -464,17 +463,21 @@ CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table"
     AS $$
 DECLARE
     "name"       CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
+    "columns"    CONSTANT TEXT[] NOT NULL = get_columns("lb_table");
     "pk_columns" CONSTANT TEXT[] NOT NULL = get_primary_key("lb_table");
 BEGIN
     IF ("lb_table" IS NULL) OR ("lbt_table" IS NULL) THEN
         RAISE EXCEPTION USING MESSAGE = '"lb_table" and "lbt_table" cannot be NULL';
+    END IF;
+    IF 'default_lang' = ANY ("columns") THEN
+        "select" = array_prepend('(b."default_lang" = bt."lang") IS TRUE AS "lang_is_default"'::TEXT, "select");
     END IF;
     IF "where" IS NULL THEN
         "where" = 'TRUE';
     END IF;
     EXECUTE format('
         CREATE VIEW %1s AS
-        SELECT (b."default_lang" = bt."lang") IS TRUE AS "is_default", %2s
+        SELECT %2s
             FROM %3s b
             LEFT JOIN %4s bt USING (%5s)
             WHERE %6s;
