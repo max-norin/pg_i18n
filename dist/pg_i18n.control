@@ -2,4 +2,3 @@ comment = 'easy creation multilingual database'
 default_version = '1.0'
 module_pathname = '$libdir/pg_i18n'
 relocatable = false
-schema = 'dictionaries'
