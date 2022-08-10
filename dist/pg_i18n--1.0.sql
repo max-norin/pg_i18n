@@ -78,10 +78,8 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION get_columns (OID, BOOLEAN, TEXT) IS 'get table columns';
 
 /*
-=================== GET_CONSTRAINTDEF =================== 
+=================== GET_CONSTRAINTDEFS =================== 
 */
--- https://www.postgresql.org/docs/current/sql-execute.html
--- https://www.postgresql.org/docs/current/sql-prepare.html
 CREATE FUNCTION get_constraintdefs ("relid" OID)
     RETURNS TEXT[]
     AS $$
@@ -156,7 +154,7 @@ CREATE FUNCTION jsonb_object_fields ("value" JSONB, "paths" TEXT[])
     RETURNS JSONB
     AS $$
 BEGIN
-    RETURN "value" - (ARRAY (SELECT jsonb_object_keys("value")) - "paths");
+    RETURN "value" - (ARRAY (SELECT jsonb_object_keys("value"))OPERATOR ( @extschema@.- ) "paths");
 END
 $$
 LANGUAGE plpgsql
@@ -187,9 +185,9 @@ BEGIN
     IF ("length" IS NULL OR "length" > 3) THEN
         RETURN FALSE;
     END IF;
-    RETURN ("has_language" AND language("arr"[1])) AND
-           (NOT ("has_script") OR (script("arr"[2]) OR (region("arr"[2]) AND NOT "has_region"))) AND
-           (NOT ("has_region") OR region("arr"[3]));
+    RETURN ("has_language" AND @extschema@.language("arr"[1])) AND
+           (NOT ("has_script") OR (@extschema@.script("arr"[2]) OR (@extschema@.region("arr"[2]) AND NOT "has_region"))) AND
+           (NOT ("has_region") OR @extschema@.region("arr"[3]));
 END
 $$
 LANGUAGE plpgsql
@@ -250,7 +248,7 @@ COMMENT ON FUNCTION script (TEXT) IS 'ISO 15924';
 =================== LANG =================== 
 */
 CREATE DOMAIN LANG AS VARCHAR(11)
-CHECK (lang (VALUE));
+CHECK (@extschema@.lang (VALUE));
 
 COMMENT ON DOMAIN LANG IS 'RFC 5646';
 
@@ -258,7 +256,7 @@ COMMENT ON DOMAIN LANG IS 'RFC 5646';
 =================== LANGUAGE =================== 
 */
 CREATE DOMAIN LANGUAGE AS VARCHAR(3)
-CHECK (language (VALUE));
+CHECK (@extschema@.language (VALUE));
 
 COMMENT ON DOMAIN LANGUAGE IS 'ISO 639';
 
@@ -266,7 +264,7 @@ COMMENT ON DOMAIN LANGUAGE IS 'ISO 639';
 =================== REGION =================== 
 */
 CREATE DOMAIN REGION AS VARCHAR(2)
-CHECK (region (VALUE));
+CHECK (@extschema@.region (VALUE));
 
 COMMENT ON DOMAIN REGION IS 'ISO 3166-1';
 
@@ -274,7 +272,7 @@ COMMENT ON DOMAIN REGION IS 'ISO 3166-1';
 =================== SCRIPT =================== 
 */
 CREATE DOMAIN SCRIPT AS VARCHAR(4)
-CHECK (script (VALUE));
+CHECK (@extschema@.script (VALUE));
 
 COMMENT ON DOMAIN SCRIPT IS 'ISO 15924';
 
@@ -283,15 +281,15 @@ COMMENT ON DOMAIN SCRIPT IS 'ISO 15924';
 */
 CREATE TABLE "langs"
 (
-    "lang"      LANG PRIMARY KEY
+    "lang"      @extschema@.LANG PRIMARY KEY
                 GENERATED ALWAYS AS (
                             "language" ||
                             CASE WHEN ("script" IS NULL) THEN '' ELSE ('-' || "script") END ||
                             CASE WHEN ("region" IS NULL) THEN '' ELSE ('-' || "region") END
                     ) STORED,
-    "language"  LANGUAGE     NOT NULL,
-    "script"    SCRIPT,
-    "region"    REGION,
+    "language"  @extschema@.LANGUAGE     NOT NULL,
+    "script"    @extschema@.SCRIPT,
+    "region"    @extschema@.REGION,
     "is_active" BOOLEAN      NOT NULL DEFAULT FALSE,
     "title"     VARCHAR(50) NOT NULL UNIQUE
 );
@@ -302,7 +300,7 @@ COMMENT ON TABLE "langs" IS 'RFC 5646';
 =================== LANG_BASE =================== 
 */
 CREATE TABLE "lang_base" (
-    "default_lang" LANG NOT NULL REFERENCES "langs" ("lang") ON UPDATE CASCADE
+    "default_lang" @extschema@.LANG NOT NULL REFERENCES "langs" ("lang") ON UPDATE CASCADE
 );
 
 CREATE RULE "lang_base__insert" AS ON INSERT TO "lang_base"
@@ -313,7 +311,7 @@ CREATE RULE "lang_base__insert" AS ON INSERT TO "lang_base"
 =================== LANG_BASE_TRAN =================== 
 */
 CREATE TABLE "lang_base_tran" (
-    "lang" LANG NOT NULL REFERENCES "langs" ("lang") ON UPDATE CASCADE
+    "lang" @extschema@.LANG NOT NULL REFERENCES "langs" ("lang") ON UPDATE CASCADE
 );
 
 CREATE RULE "lang_base_trans__insert" AS ON INSERT TO "lang_base_tran"
@@ -327,7 +325,7 @@ CREATE FUNCTION event_trigger_add_constraints_from_lang_parent_tables ()
     RETURNS EVENT_TRIGGER
     AS $$
 DECLARE
-    "parents" CONSTANT     REGCLASS[] = ARRAY ['"lang_base"'::REGCLASS, '"lang_base_tran"'::REGCLASS];
+    "parents"              REGCLASS[];
     "tg_relid"             OID;
     "tg_relid_constraints" TEXT[];
     "relid"                OID;
@@ -350,6 +348,7 @@ BEGIN
             IF "obj".in_extension = TRUE THEN
                 CONTINUE;
             END IF;
+            "parents" = ARRAY ['@extschema@."lang_base"'::REGCLASS, '@extschema@."lang_base_tran"'::REGCLASS];
             IF "obj".command_tag = 'CREATE TABLE' THEN
                 "tg_relid" = "obj".objid;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: CREATE TABLE ', "obj".object_identity));
@@ -364,11 +363,11 @@ BEGIN
                 RAISE DEBUG USING MESSAGE = (concat('parents: ', COALESCE("relids", '{}')));
                 "table" = "tg_relid"::REGCLASS;
                 -- get existing constraints
-                "tg_relid_constraints" = get_constraintdefs ("tg_relid");
+                "tg_relid_constraints" = @extschema@.get_constraintdefs ("tg_relid");
                 FOREACH "relid" IN ARRAY COALESCE("relids", '{}')
                 LOOP
                     -- except existing constraints from parent constraints
-                    "constraints" = get_constraintdefs ("relid") - "tg_relid_constraints";
+                    "constraints" = @extschema@.get_constraintdefs ("relid") OPERATOR ( @extschema@.- ) "tg_relid_constraints";
                     FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')
                     LOOP
                         RAISE NOTICE USING MESSAGE = (concat('FROM PARENT TABLE: ', "relid"::REGCLASS));
@@ -391,11 +390,11 @@ BEGIN
                     WHERE p.oid = "tg_relid");
                 RAISE DEBUG USING MESSAGE = (concat('children: ', COALESCE("relids", '{}')));
                 -- get existing constraints
-                "tg_relid_constraints" = get_constraintdefs ("tg_relid");
+                "tg_relid_constraints" = @extschema@.get_constraintdefs ("tg_relid");
                 FOREACH "relid" IN ARRAY COALESCE("relids", '{}')
                 LOOP
                     -- except existing constraints from parent constraints
-                    "constraints" = "tg_relid_constraints" - get_constraintdefs ("relid");
+                    "constraints" = "tg_relid_constraints" OPERATOR ( @extschema@.- ) @extschema@.get_constraintdefs ("relid");
                     "table" = "relid"::REGCLASS;
                     RAISE NOTICE USING MESSAGE = (concat('TO CHILD TABLE: ', "table"));
                     FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')
@@ -417,10 +416,10 @@ VOLATILE;
 CREATE PROCEDURE create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "where" TEXT = NULL)
     AS $$
 DECLARE
-    "name"        CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
-    "lb_columns"  CONSTANT TEXT[] NOT NULL = get_columns("lb_table");
-    "lbt_columns" CONSTANT TEXT[] NOT NULL = get_columns("lbt_table");
-    "pk_columns"  CONSTANT TEXT[] NOT NULL = get_primary_key("lb_table");
+    "name"        CONSTANT TEXT NOT NULL   = COALESCE(@extschema@.format_table_name("name"), @extschema@.format_table_name("lb_table"::TEXT, 'v_'));
+    "lb_columns"  CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("lb_table");
+    "lbt_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("lbt_table");
+    "pk_columns"  CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("lb_table");
     "columns"              TEXT[];
     "column"               TEXT;
 BEGIN
@@ -450,7 +449,7 @@ BEGIN
         CREATE TRIGGER "update"
             INSTEAD OF UPDATE
             ON %1s FOR EACH ROW
-        EXECUTE FUNCTION trigger_update_dictionary_view(%2L, %3L);
+        EXECUTE FUNCTION @extschema@.trigger_update_dictionary_view(%2L, %3L);
     ', "name", "lb_table", "lbt_table");
 END
 $$
@@ -462,9 +461,9 @@ LANGUAGE plpgsql;
 CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{*}', "where" TEXT = NULL)
     AS $$
 DECLARE
-    "name"       CONSTANT TEXT NOT NULL   = COALESCE(format_table_name("name"), format_table_name("lb_table"::TEXT, 'v_'));
-    "columns"    CONSTANT TEXT[] NOT NULL = get_columns("lb_table");
-    "pk_columns" CONSTANT TEXT[] NOT NULL = get_primary_key("lb_table");
+    "name"       CONSTANT TEXT NOT NULL   = COALESCE(@extschema@.format_table_name("name"), @extschema@.format_table_name("lb_table"::TEXT, 'v_'));
+    "columns"    CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("lb_table");
+    "pk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("lb_table");
 BEGIN
     IF ("lb_table" IS NULL) OR ("lbt_table" IS NULL) THEN
         RAISE EXCEPTION USING MESSAGE = '"lb_table" and "lbt_table" cannot be NULL';
@@ -486,13 +485,13 @@ BEGIN
         CREATE TRIGGER "insert"
             INSTEAD OF INSERT
             ON %1s FOR EACH ROW
-        EXECUTE FUNCTION trigger_insert_user_view(%2L, %3L);
+        EXECUTE FUNCTION @extschema@.trigger_insert_user_view(%2L, %3L);
     ', "name", "lb_table", "lbt_table");
     EXECUTE format('
         CREATE TRIGGER "update"
             INSTEAD OF UPDATE
             ON %1s FOR EACH ROW
-        EXECUTE FUNCTION trigger_update_user_view(%2L, %3L);
+        EXECUTE FUNCTION @extschema@.trigger_update_user_view(%2L, %3L);
     ', "name", "lb_table", "lbt_table");
 END
 $$
@@ -508,11 +507,11 @@ DECLARE
     "record"                 JSONB NOT NULL    = to_jsonb(NEW);
     "lb_record"              JSONB NOT NULL    = '{}';
     "lb_table"      CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
-    "lb_pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("lb_table");
-    "lb_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lb_table", FALSE) - "lb_pk_columns";
+    "lb_pk_columns" CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lb_table");
+    "lb_columns"    CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lb_table", FALSE) OPERATOR ( @extschema@.- ) "lb_pk_columns";
     "lb_values"              TEXT[];
     "lbt_table"     CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
-    "lbt_columns"   CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table", FALSE);
+    "lbt_columns"   CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lbt_table", FALSE);
     "lbt_values"             TEXT[];
     "column"                 TEXT;
 BEGIN
@@ -557,16 +556,16 @@ DECLARE
     "old_record"              JSONB NOT NULL    = to_jsonb(OLD);
     "new_record"              JSONB NOT NULL    = to_jsonb(NEW);
     "lbt_table"      CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
-    "lbt_pk_name"    CONSTANT TEXT NOT NULL     = get_primary_key_name("lbt_table");
-    "lbt_pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("lbt_table");
+    "lbt_pk_name"    CONSTANT TEXT NOT NULL     = @extschema@.get_primary_key_name("lbt_table");
+    "lbt_pk_columns" CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lbt_table");
     "lbt_pk_values"           TEXT[];
-    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table", FALSE) - "lbt_pk_columns";
+    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lbt_table", FALSE) OPERATOR ( @extschema@.- ) "lbt_pk_columns";
     "lbt_values"              TEXT[];
     "lb_record"               JSONB NOT NULL    = '{}';
     "lb_table"       CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
-    "lb_pk_columns"  CONSTANT TEXT[] NOT NULL   = get_primary_key("lb_table");
+    "lb_pk_columns"  CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lb_table");
     "lb_pk_values"            TEXT[];
-    "lb_columns"     CONSTANT TEXT[] NOT NULL   = get_columns("lb_table", FALSE) - "lbt_columns";
+    "lb_columns"     CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lb_table", FALSE) OPERATOR ( @extschema@.- ) "lbt_columns";
     "lb_values"               TEXT[];
     "column"                  TEXT;
 BEGIN
@@ -581,7 +580,7 @@ BEGIN
         array_to_string("lb_values", ','), array_to_string("lb_pk_columns", ','),
         array_to_string("lb_pk_values", ','), "lb_table"
     ) INTO "lb_record";
-    "new_record" = "new_record" || ("lb_record" -> ("lb_columns" || "lb_pk_columns"));
+    "new_record" = "new_record" || ("lb_record" OPERATOR ( @extschema@.-> ) ("lb_columns" || "lb_pk_columns"));
     FOREACH "column" IN ARRAY "lbt_pk_columns" LOOP
         "lbt_pk_values" = array_append("lbt_pk_values", format('%L', "new_record" ->> "column"));
     END LOOP;
@@ -615,14 +614,14 @@ DECLARE
     "new_record"              JSONB NOT NULL    = to_jsonb(NEW);
     "lb_record"               JSONB NOT NULL    = '{}';
     "lb_table"       CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
-    "lb_pk_columns"  CONSTANT TEXT[] NOT NULL   = get_primary_key("lb_table");
+    "lb_pk_columns"  CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lb_table");
     "lb_pk_values"            TEXT[];
-    "lb_columns"     CONSTANT TEXT[] NOT NULL   = get_columns("lb_table", FALSE);
+    "lb_columns"     CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lb_table", FALSE);
     "lb_values"               TEXT[];
     "lbt_table"      CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
-    "lbt_pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("lbt_table");
+    "lbt_pk_columns" CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lbt_table");
     "lbt_pk_values"           TEXT[];
-    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table", FALSE);
+    "lbt_columns"    CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lbt_table", FALSE);
     "lbt_values"              TEXT[];
     "column"                  TEXT;
 BEGIN
@@ -666,5 +665,5 @@ SECURITY DEFINER;
 -- Event Trigger Firing Matrix - https://postgresql.org/docs/current/event-trigger-matrix.html
 CREATE EVENT TRIGGER "add_constraints_from_lang_parent_tables" ON ddl_command_end
     WHEN TAG IN ('CREATE TABLE', 'ALTER TABLE')
-        EXECUTE PROCEDURE event_trigger_add_constraints_from_lang_parent_tables ();
+        EXECUTE PROCEDURE @extschema@.event_trigger_add_constraints_from_lang_parent_tables ();
 

@@ -2,7 +2,7 @@ CREATE FUNCTION event_trigger_add_constraints_from_lang_parent_tables ()
     RETURNS EVENT_TRIGGER
     AS $$
 DECLARE
-    "parents" CONSTANT     REGCLASS[] = ARRAY ['"lang_base"'::REGCLASS, '"lang_base_tran"'::REGCLASS];
+    "parents"              REGCLASS[];
     "tg_relid"             OID;
     "tg_relid_constraints" TEXT[];
     "relid"                OID;
@@ -25,6 +25,7 @@ BEGIN
             IF "obj".in_extension = TRUE THEN
                 CONTINUE;
             END IF;
+            "parents" = ARRAY ['@extschema@."lang_base"'::REGCLASS, '@extschema@."lang_base_tran"'::REGCLASS];
             IF "obj".command_tag = 'CREATE TABLE' THEN
                 "tg_relid" = "obj".objid;
                 RAISE DEBUG USING MESSAGE = (concat('command_tag: CREATE TABLE ', "obj".object_identity));
@@ -39,11 +40,11 @@ BEGIN
                 RAISE DEBUG USING MESSAGE = (concat('parents: ', COALESCE("relids", '{}')));
                 "table" = "tg_relid"::REGCLASS;
                 -- get existing constraints
-                "tg_relid_constraints" = get_constraintdefs ("tg_relid");
+                "tg_relid_constraints" = @extschema@.get_constraintdefs ("tg_relid");
                 FOREACH "relid" IN ARRAY COALESCE("relids", '{}')
                 LOOP
                     -- except existing constraints from parent constraints
-                    "constraints" = get_constraintdefs ("relid") - "tg_relid_constraints";
+                    "constraints" = @extschema@.get_constraintdefs ("relid") OPERATOR ( @extschema@.- ) "tg_relid_constraints";
                     FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')
                     LOOP
                         RAISE NOTICE USING MESSAGE = (concat('FROM PARENT TABLE: ', "relid"::REGCLASS));
@@ -66,11 +67,11 @@ BEGIN
                     WHERE p.oid = "tg_relid");
                 RAISE DEBUG USING MESSAGE = (concat('children: ', COALESCE("relids", '{}')));
                 -- get existing constraints
-                "tg_relid_constraints" = get_constraintdefs ("tg_relid");
+                "tg_relid_constraints" = @extschema@.get_constraintdefs ("tg_relid");
                 FOREACH "relid" IN ARRAY COALESCE("relids", '{}')
                 LOOP
                     -- except existing constraints from parent constraints
-                    "constraints" = "tg_relid_constraints" - get_constraintdefs ("relid");
+                    "constraints" = "tg_relid_constraints" OPERATOR ( @extschema@.- ) @extschema@.get_constraintdefs ("relid");
                     "table" = "relid"::REGCLASS;
                     RAISE NOTICE USING MESSAGE = (concat('TO CHILD TABLE: ', "table"));
                     FOREACH "constraint" IN ARRAY COALESCE("constraints", '{}')

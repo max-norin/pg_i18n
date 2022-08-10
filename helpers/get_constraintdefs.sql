@@ -1,5 +1,3 @@
--- https://www.postgresql.org/docs/current/sql-execute.html
--- https://www.postgresql.org/docs/current/sql-prepare.html
 CREATE FUNCTION get_constraintdefs ("relid" OID)
     RETURNS TEXT[]
     AS $$

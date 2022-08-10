@@ -5,11 +5,11 @@ DECLARE
     "record"                 JSONB NOT NULL    = to_jsonb(NEW);
     "lb_record"              JSONB NOT NULL    = '{}';
     "lb_table"      CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
-    "lb_pk_columns" CONSTANT TEXT[] NOT NULL   = get_primary_key("lb_table");
-    "lb_columns"    CONSTANT TEXT[] NOT NULL   = get_columns("lb_table", FALSE) - "lb_pk_columns";
+    "lb_pk_columns" CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lb_table");
+    "lb_columns"    CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lb_table", FALSE) OPERATOR ( @extschema@.- ) "lb_pk_columns";
     "lb_values"              TEXT[];
     "lbt_table"     CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
-    "lbt_columns"   CONSTANT TEXT[] NOT NULL   = get_columns("lbt_table", FALSE);
+    "lbt_columns"   CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lbt_table", FALSE);
     "lbt_values"             TEXT[];
     "column"                 TEXT;
 BEGIN
