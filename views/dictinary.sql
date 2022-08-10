@@ -26,7 +26,7 @@ BEGIN
         CREATE VIEW %1s AS
         SELECT (bt.*) IS NULL AS "is_default", "langs"."lang", %2s
             FROM %3s b
-            CROSS JOIN "langs"
+            CROSS JOIN @extschema@."langs"
             LEFT JOIN %4s bt USING ("lang", %5s)
             WHERE %6s;
     ', "name", array_to_string("columns", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
