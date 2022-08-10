@@ -22,7 +22,7 @@ CREATE EXTENSION "pg_i18n"
     SCHEMA "dictionaries"
     VERSION '1.0';
 ```
-[Подробнее про расширение и файл control](https://postgrespro.ru/docs/postgrespro/13/extend-extensions)
+[Подробнее про расширение и файл control](https://postgrespro.ru/docs/postgresql/14/extend-extensions)
 
 ### Использование
 
