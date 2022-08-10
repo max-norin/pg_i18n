@@ -26,6 +26,8 @@ CREATE EXTENSION "pg_i18n"
     VERSION '1.0';
 ```
 
+[More about the extension and the control file](https://www.postgresql.org/docs/current/extend-extensions.html)
+
 ### Usage
 
 The extension creates `"langs"` table that stores the language tags used. You need to populate the
@@ -312,7 +314,7 @@ VALUES (DEFAULT, 'ru', 'max', 'ru', 'Макс');
     - [array_except](./helpers/array_except.sql)
     - [format_table_name](./helpers/format_table_name.sql)
     - [get_columns](./helpers/get_columns.sql)
-    - [get_constraintdef](./helpers/get_constraintdef.sql)
+    - [get_constraintdefs](helpers/get_constraintdefs.sql)
     - [get_primary_key](./helpers/get_primary_key.sql)
     - [get_primary_key_name](./helpers/get_primary_key_name.sql)
     - [jsonb_object_fields](./helpers/jsonb_object_fields.sql)

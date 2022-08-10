@@ -22,6 +22,7 @@ CREATE EXTENSION "pg_i18n"
     SCHEMA "dictionaries"
     VERSION '1.0';
 ```
+[Подробнее про расширение и файл control](https://postgrespro.ru/docs/postgrespro/13/extend-extensions)
 
 ### Использование
 
@@ -315,7 +316,7 @@ VALUES (DEFAULT, 'ru', 'max', 'ru', 'Макс');
     - [array_except](./helpers/array_except.sql)
     - [format_table_name](./helpers/format_table_name.sql)
     - [get_columns](./helpers/get_columns.sql)
-    - [get_constraintdef](./helpers/get_constraintdef.sql)
+    - [get_constraintdefs](helpers/get_constraintdefs.sql)
     - [get_primary_key](./helpers/get_primary_key.sql)
     - [get_primary_key_name](./helpers/get_primary_key_name.sql)
     - [jsonb_object_fields](./helpers/jsonb_object_fields.sql)
