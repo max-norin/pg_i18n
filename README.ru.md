@@ -314,11 +314,13 @@ VALUES (DEFAULT, 'ru', 'max', 'ru', 'Макс');
 
 - `helpers/*.sql` вспомогательные функции
     - [array_except](./helpers/array_except.sql)
+    - [array_intersect](./helpers/array_intersect.sql)
     - [format_table_name](./helpers/format_table_name.sql)
     - [get_columns](./helpers/get_columns.sql)
     - [get_constraintdefs](helpers/get_constraintdefs.sql)
     - [get_primary_key](./helpers/get_primary_key.sql)
     - [get_primary_key_name](./helpers/get_primary_key_name.sql)
+    - [jsonb_except](./helpers/jsonb_except.sql)
     - [jsonb_object_fields](./helpers/jsonb_object_fields.sql)
 - `rules/*.sql` правила для доменов
     - [lang](./rules/lang.sql)

@@ -2,7 +2,7 @@ CREATE FUNCTION jsonb_object_fields ("value" JSONB, "paths" TEXT[])
     RETURNS JSONB
     AS $$
 BEGIN
-    RETURN "value" - (ARRAY (SELECT jsonb_object_keys("value"))OPERATOR ( @extschema@.- ) "paths");
+    RETURN "value" - (ARRAY (SELECT jsonb_object_keys("value")) OPERATOR ( @extschema@.- ) "paths");
 END
 $$
 LANGUAGE plpgsql
