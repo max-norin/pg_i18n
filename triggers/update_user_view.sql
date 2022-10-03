@@ -13,6 +13,7 @@ DECLARE
     "lb_columns"          CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lb_table", FALSE);
     "lb_changed_columns"  CONSTANT TEXT[] NOT NULL   = "lb_columns" OPERATOR ( @extschema@.& ) "changed_columns";
     "lb_values"                    TEXT[];
+    "lbt_record"                   JSONB NOT NULL    = '{}';
     "lbt_table"           CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
     "lbt_pk_columns"      CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lbt_table");
     "lbt_pk_values"                TEXT[];
@@ -37,6 +38,7 @@ BEGIN
         "old_record" = "old_record" || "lb_record";
         "new_record" = "new_record" || "lb_record";
     END IF;
+    NEW = jsonb_populate_record(NEW, "lb_record");
     IF array_length("lbt_changed_columns", 1) IS NOT NULL THEN
         FOREACH "column" IN ARRAY "lbt_pk_columns" LOOP
             "lbt_pk_values" = array_append("lbt_pk_values", format('%L', "old_record" ->> "column"));
@@ -44,12 +46,14 @@ BEGIN
         FOREACH "column" IN ARRAY "lbt_changed_columns" LOOP
             "lbt_values" = array_append("lbt_values", format('%L', "new_record" ->> "column"));
         END LOOP;
-        EXECUTE format('UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s);',
+        EXECUTE format('UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s) RETURNING to_json(%6s.*);',
             "lbt_table",
             array_to_string("lbt_changed_columns", ','), array_to_string("lbt_values", ','),
-            array_to_string("lbt_pk_columns", ','), array_to_string("lbt_pk_values", ',')
-        );
+            array_to_string("lbt_pk_columns", ','), array_to_string("lbt_pk_values", ','),
+            "lbt_table"
+        ) INTO "lbt_record";
     END IF;
+    NEW = jsonb_populate_record(NEW, "lbt_record");
     RETURN NEW;
 END
 $$
