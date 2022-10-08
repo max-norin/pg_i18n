@@ -11,9 +11,9 @@ BEGIN
     IF ("length" IS NULL OR "length" > 3) THEN
         RETURN FALSE;
     END IF;
-    RETURN ("has_language" AND @extschema@.language("arr"[1])) AND
-           (NOT ("has_script") OR (@extschema@.script("arr"[2]) OR (@extschema@.region("arr"[2]) AND NOT "has_region"))) AND
-           (NOT ("has_region") OR @extschema@.region("arr"[3]));
+    RETURN ("has_language" AND @extschema@.language_rule("arr"[1])) AND
+           (NOT ("has_script") OR (@extschema@.script_rule("arr"[2]) OR (@extschema@.region_rule("arr"[2]) AND NOT "has_region"))) AND
+           (NOT ("has_region") OR @extschema@.region_rule("arr"[3]));
 END
 $$
 LANGUAGE plpgsql
