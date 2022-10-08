@@ -13,9 +13,9 @@ BEGIN
     END IF;
     "index" = 1;
     WHILE "index" <= "length" LOOP
-            "a" = array_remove("a","b"["index"]);
-            "index" = "index" + 1;
-        END LOOP;
+        "a" = array_remove("a","b"["index"]);
+        "index" = "index" + 1;
+    END LOOP;
     RETURN "a";
 END;
 $$
@@ -169,6 +169,96 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION get_primary_key_name (OID) IS 'get table primary key name';
 
 /*
+=================== INSERT_USING_ARRAYS =================== 
+*/
+CREATE OR REPLACE FUNCTION insert_using_arrays ("table" REGCLASS, "columns" TEXT[],  "values" TEXT[], "new" RECORD)
+    RETURNS JSONB
+    AS $$
+DECLARE
+    "result"           JSONB NOT NULL  = '{}';
+    "columns" CONSTANT TEXT  NOT NULL  = array_to_string("columns", ',');
+    "values"  CONSTANT TEXT  NOT NULL  = array_to_string("values", ',');
+BEGIN
+    EXECUTE format('INSERT INTO %1s (%2s) VALUES (%3s) RETURNING to_jsonb(%4s.*);', "table", "columns", "values", "table")
+        INTO "result" USING "new";
+
+    RETURN "result";
+END
+$$
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION insert_using_arrays (REGCLASS, TEXT[], TEXT[], RECORD) IS 'insert into table $1 using array of columns, array of values and NEW record';
+/*
+=================== INSERT_USING_RECORDS =================== 
+*/
+CREATE FUNCTION insert_using_records ("table" REGCLASS, "new" RECORD)
+    RETURNS JSONB
+    AS $$
+DECLARE
+    -- pk  - primary key
+    -- sk  - secondary key
+    -- main
+    "result"              JSONB NOT NULL  = '{}';
+    "record"              JSONB NOT NULL  = row_to_json(NEW);
+    -- table
+    "pk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("table");
+    "pk_values"           TEXT[];
+    "sk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("table", FALSE) OPERATOR ( @extschema@.- ) "pk_columns";
+    "sk_values"           TEXT[];
+    -- helpers
+    "column"              TEXT;
+BEGIN
+    -- get primary key value for table
+    FOREACH "column" IN ARRAY "pk_columns" LOOP
+        -- all columns in primary key is not NULL, DEFAULT for sequence
+        IF NOT ("record" ? "column") OR ("record" ->> "column" IS NULL) THEN
+            "pk_values" = array_append("pk_values", 'DEFAULT');
+        ELSE
+            "pk_values" = array_append("pk_values", format('$1.%I', "column"));
+        END IF;
+    END LOOP;
+    -- get other column values table
+    FOREACH "column" IN ARRAY "sk_columns" LOOP
+        "sk_values" = array_append("sk_values", format('$1.%I', "column"));
+    END LOOP;
+    -- insert and return record from table
+    "result" = @extschema@.insert_using_arrays("table", "pk_columns" || "sk_columns", "pk_values"  || "sk_values", NEW);
+
+    RETURN "result";
+END
+$$
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION insert_using_records (REGCLASS, RECORD) IS 'insert into table $1 using NEW record';
+/*
+=================== JSONB_EMPTY_BY_TABLE =================== 
+*/
+CREATE FUNCTION jsonb_empty_by_table ("relid" OID)
+    RETURNS JSONB
+    AS $$
+DECLARE
+    "columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("relid");
+    "result"           JSONB           = '{}';
+    "column"           TEXT;
+BEGIN
+    FOREACH "column" IN ARRAY "columns" LOOP
+        "result" = jsonb_insert("result", ARRAY ["column"], 'null');
+    END LOOP;
+
+    RETURN "result";
+END
+$$
+LANGUAGE plpgsql
+IMMUTABLE;
+
+COMMENT ON FUNCTION jsonb_empty_by_table (OID) IS 'get jsonb object with empty columns from table $1';
+/*
 =================== JSONB_EXCEPT =================== 
 */
 CREATE FUNCTION jsonb_except ("a" JSONB, "b" JSONB)
@@ -219,6 +309,103 @@ CREATE OPERATOR -> (
 
 COMMENT ON OPERATOR -> (JSONB, TEXT[]) IS 'get json object fields';
 
+/*
+=================== JSONB_PK_TABLE_OBJECT =================== 
+*/
+CREATE FUNCTION jsonb_pk_table_object ("relid" OID, "record" JSONB)
+    RETURNS JSONB
+    AS $$
+DECLARE
+    -- main
+    "result"              JSONB  NOT NULL  = '{}';
+    -- primary keys
+    "pk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("relid");
+    -- helpers
+    "column"              TEXT;
+BEGIN
+    FOREACH "column" IN ARRAY "pk_columns" LOOP
+        "result" = jsonb_set("result", ARRAY ["column"], "record" -> "column");
+    END LOOP;
+
+    RETURN "result";
+END
+$$
+LANGUAGE plpgsql
+STABLE
+RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION jsonb_pk_table_object (OID, JSONB) IS 'get jsonb object with primary key columns from table $1 and values from record $2';
+/*
+=================== UPDATE_USING_ARRAYS =================== 
+*/
+CREATE FUNCTION update_using_arrays ("table" REGCLASS, "pk_columns" TEXT[], "pk_values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "old" RECORD, "new" RECORD)
+    RETURNS JSONB
+    AS $$
+DECLARE
+    -- pk  - primary key
+    -- ch  - changed
+    "result"              JSONB NOT NULL = '{}';
+    "pk_columns" CONSTANT TEXT  NOT NULL = array_to_string("pk_columns", ',');
+    "pk_values"  CONSTANT TEXT  NOT NULL = array_to_string("pk_values",  ',');
+    "ch_columns" CONSTANT TEXT  NOT NULL = array_to_string("ch_columns", ',');
+    "ch_values"  CONSTANT TEXT  NOT NULL = array_to_string("ch_values",  ',');
+BEGIN
+    EXECUTE format('UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s) RETURNING to_json(%6s.*);', "table", "ch_columns", "ch_values", "pk_columns", "pk_values", "table")
+        INTO "result" USING "old", "new";
+
+    RETURN "result";
+END
+$$
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION update_using_arrays (REGCLASS, TEXT[], TEXT[], TEXT[], TEXT[], RECORD, RECORD) IS 'update table $1 using array of primary keys, array of values and OLD NEW records';
+/*
+=================== UPDATE_USING_RECORDS =================== 
+*/
+CREATE FUNCTION update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
+    RETURNS JSONB
+    AS $$
+DECLARE
+    -- pk  - primary key
+    -- ch  - changed
+    -- main
+    "result"                     JSONB  NOT NULL = '{}';
+    -- table
+    "columns"           CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("table", FALSE);
+    -- primary keys
+    "pk_columns"        CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("table");
+    "pk_values"                  TEXT[];
+    -- changed values
+    "ch_columns"        CONSTANT TEXT[] NOT NULL = "columns" OPERATOR ( @extschema@.& ) "ch_columns";
+    "ch_values"                  TEXT[];
+    -- helpers
+    "column"                     TEXT;
+BEGIN
+    IF array_length("ch_columns", 1) IS NOT NULL THEN
+        -- set primary key values
+        FOREACH "column" IN ARRAY "pk_columns" LOOP
+            "pk_values" = array_append("pk_values", format('$1.%I', "column"));
+        END LOOP;
+        -- set changed values
+        FOREACH "column" IN ARRAY "ch_columns" LOOP
+            "ch_values" = array_append("ch_values", format('$2.%I', "column"));
+        END LOOP;
+        -- update and return record from table
+        "result" = @extschema@.update_using_arrays("table", "pk_columns", "pk_values", "ch_columns", "ch_values", OLD, NEW);
+    END IF;
+
+    RETURN "result";
+END
+$$
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';
 /*
 =================== LANG =================== 
 */
@@ -327,7 +514,7 @@ CHECK (@extschema@.script (VALUE));
 COMMENT ON DOMAIN SCRIPT IS 'ISO 15924';
 
 /*
-=================== LANG =================== 
+=================== LANGS =================== 
 */
 CREATE TABLE "langs"
 (
@@ -554,45 +741,31 @@ CREATE FUNCTION trigger_insert_user_view ()
     RETURNS TRIGGER
     AS $$
 DECLARE
-    "record"                 JSONB NOT NULL    = to_jsonb(NEW);
-    "lb_record"              JSONB NOT NULL    = '{}';
-    "lb_table"      CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
-    "lb_pk_columns" CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lb_table");
-    "lb_columns"    CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lb_table", FALSE) OPERATOR ( @extschema@.- ) "lb_pk_columns";
-    "lb_values"              TEXT[];
-    "lbt_record"             JSONB NOT NULL    = '{}';
-    "lbt_table"     CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
-    "lbt_columns"   CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lbt_table", FALSE);
-    "lbt_values"             TEXT[];
-    "column"                 TEXT;
+    -- lb  - language base
+    -- lbt - lang base tran
+    -- language base
+    "lb_record"          JSONB;
+    "lb_table"  CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
+    -- lang base tran
+    "lbt_table" CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
+    -- helpers
+    "record"             JSONB    NOT NULL ='{}';
 BEGIN
-    FOREACH "column" IN ARRAY "lb_pk_columns" LOOP
-        -- all columns in primary key is not NULL, DEFAULT for sequence
-        IF NOT ("record" ? "column") OR ("record" ->> "column" IS NULL) THEN
-            "lb_values" = array_append("lb_values", 'DEFAULT');
-        ELSE
-            "lb_values" = array_append("lb_values", format('%L', "record" ->> "column"));
-        END IF;
-    END LOOP;
-    FOREACH "column" IN ARRAY "lb_columns" LOOP
-        "lb_values" = array_append("lb_values", format('%L', "record" ->> "column"));
-    END LOOP;
-    EXECUTE format('INSERT INTO %1s (%2s) VALUES (%3s) RETURNING to_json(%4s.*);',
-        "lb_table",
-        array_to_string("lb_pk_columns" || "lb_columns", ','), array_to_string("lb_values", ','),
-        "lb_table"
-    ) INTO "lb_record";
-    "record" = "record" || "lb_record";
+    -- insert and return record from lb_table
+    "lb_record" = @extschema@.insert_using_records("lb_table", NEW);
+    -- join query result with target table record
+    -- for the correctness of data types and adding the necessary data to lbt_table
     NEW = jsonb_populate_record(NEW, "lb_record");
-    FOREACH "column" IN ARRAY "lbt_columns" LOOP
-        "lbt_values" = array_append("lbt_values", format('%L', "record" ->> "column"));
-    END LOOP;
-    EXECUTE format('INSERT INTO %1s (%2s) VALUES (%3s) RETURNING to_json(%4s.*);',
-        "lbt_table",
-        array_to_string("lbt_columns", ','), array_to_string("lbt_values", ','),
-        "lbt_table"
-    ) INTO "lbt_record";
-    NEW = jsonb_populate_record(NEW, "lbt_record");
+
+    -- insert and return record from lbt_table
+    PERFORM @extschema@.insert_using_records("lbt_table", NEW);
+
+    -- change result new, empty object + pk object
+    "record" = @extschema@.jsonb_empty_by_table(TG_RELID) || @extschema@.jsonb_pk_table_object("lb_table", to_jsonb(NEW));
+    NEW = jsonb_populate_record(NEW, "record");
+
+    -- returning record with primary keys only
+    -- because this function does not know how the values of the target table are formed
     RETURN NEW;
 END
 $$
@@ -600,6 +773,7 @@ LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER;
 
+COMMENT ON FUNCTION trigger_insert_user_view (OID) IS 'DON''T USE DEFAULT WITH VIEWS';
 /*
 =================== UPDATE_DICTIONARY_VIEW =================== 
 */
@@ -664,58 +838,35 @@ CREATE FUNCTION trigger_update_user_view ()
     RETURNS TRIGGER
     AS $$
 DECLARE
-    "old_record"                   JSONB NOT NULL    = to_jsonb(OLD);
-    "new_record"                   JSONB NOT NULL    = to_jsonb(NEW);
-    "changed_record"      CONSTANT JSONB             = "new_record" OPERATOR ( @extschema@.- ) "old_record";
-    "changed_columns"     CONSTANT TEXT[] NOT NULL   = ARRAY(SELECT jsonb_object_keys("changed_record"));
-    "lb_record"                    JSONB NOT NULL    = '{}';
-    "lb_table"            CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
-    "lb_pk_columns"       CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lb_table");
-    "lb_pk_values"                 TEXT[];
-    "lb_columns"          CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lb_table", FALSE);
-    "lb_changed_columns"  CONSTANT TEXT[] NOT NULL   = "lb_columns" OPERATOR ( @extschema@.& ) "changed_columns";
-    "lb_values"                    TEXT[];
-    "lbt_record"                   JSONB NOT NULL    = '{}';
-    "lbt_table"           CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
-    "lbt_pk_columns"      CONSTANT TEXT[] NOT NULL   = @extschema@.get_primary_key("lbt_table");
-    "lbt_pk_values"                TEXT[];
-    "lbt_columns"         CONSTANT TEXT[] NOT NULL   = @extschema@.get_columns("lbt_table", FALSE);
-    "lbt_changed_columns" CONSTANT TEXT[] NOT NULL   = "lbt_columns" OPERATOR ( @extschema@.& ) "changed_columns";
-    "lbt_values"                   TEXT[];
-    "column"                       TEXT;
+    -- lb  - lang base
+    -- lbt - lang base tran
+    -- ch  - changed
+    -- main
+    "ch_record"  CONSTANT JSONB             = to_jsonb(NEW) OPERATOR ( @extschema@.- ) to_jsonb(OLD);
+    "ch_columns" CONSTANT TEXT[]   NOT NULL = ARRAY(SELECT jsonb_object_keys("ch_record"));
+    -- lang base
+    "lb_record"           JSONB    NOT NULL = '{}';
+    "lb_table"   CONSTANT REGCLASS NOT NULL = TG_ARGV[0];
+    -- lang base tran
+    "lbt_table"  CONSTANT REGCLASS NOT NULL = TG_ARGV[1];
+    -- helpers
+    "record"              JSONB    NOT NULL ='{}';
 BEGIN
-    IF array_length("lb_changed_columns", 1) IS NOT NULL THEN
-        FOREACH "column" IN ARRAY "lb_pk_columns" LOOP
-            "lb_pk_values" = array_append("lb_pk_values", format('%L', "old_record" ->> "column"));
-        END LOOP;
-        FOREACH "column" IN ARRAY "lb_changed_columns" LOOP
-            "lb_values" = array_append("lb_values", format('%L', "new_record" ->> "column"));
-        END LOOP;
-        EXECUTE format('UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s) RETURNING to_json(%4s.*);',
-            "lb_table",
-            array_to_string("lb_changed_columns", ','), array_to_string("lb_values", ','),
-            array_to_string("lb_pk_columns", ','), array_to_string("lb_pk_values", ','),
-            "lb_table"
-        ) INTO "lb_record";
-        "old_record" = "old_record" || "lb_record";
-        "new_record" = "new_record" || "lb_record";
-    END IF;
+    -- update and return record from lb_table
+    "lb_record" = update_using_records("lb_table", "ch_columns", OLD, NEW);
+    -- join query result with target table record
+    -- for the correctness of data types and adding the necessary data to lbt_table
     NEW = jsonb_populate_record(NEW, "lb_record");
-    IF array_length("lbt_changed_columns", 1) IS NOT NULL THEN
-        FOREACH "column" IN ARRAY "lbt_pk_columns" LOOP
-            "lbt_pk_values" = array_append("lbt_pk_values", format('%L', "old_record" ->> "column"));
-        END LOOP;
-        FOREACH "column" IN ARRAY "lbt_changed_columns" LOOP
-            "lbt_values" = array_append("lbt_values", format('%L', "new_record" ->> "column"));
-        END LOOP;
-        EXECUTE format('UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s) RETURNING to_json(%6s.*);',
-            "lbt_table",
-            array_to_string("lbt_changed_columns", ','), array_to_string("lbt_values", ','),
-            array_to_string("lbt_pk_columns", ','), array_to_string("lbt_pk_values", ','),
-            "lbt_table"
-        ) INTO "lbt_record";
-    END IF;
-    NEW = jsonb_populate_record(NEW, "lbt_record");
+
+    -- update and return record from lbt_table
+    PERFORM @extschema@.update_using_records("lbt_table", "ch_columns", NEW, NEW);
+
+    -- change result new, empty object + pk object
+    "record" = @extschema@.jsonb_empty_by_table(TG_RELID) || @extschema@.jsonb_pk_table_object("lb_table", to_jsonb(NEW));
+    NEW = jsonb_populate_record(NEW, "record");
+
+    -- returning record with primary keys only
+    -- because this function does not know how the values of the target table are formed
     RETURN NEW;
 END
 $$
