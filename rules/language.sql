@@ -1,4 +1,4 @@
-CREATE FUNCTION language ("value" TEXT)
+CREATE FUNCTION language_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
@@ -9,5 +9,5 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION language (TEXT) IS 'ISO 639';
+COMMENT ON FUNCTION language_rule (TEXT) IS 'ISO 639';
 

@@ -1,5 +1,5 @@
 CREATE DOMAIN LANGUAGE AS VARCHAR(3)
-CHECK (@extschema@.language (VALUE));
+CHECK (@extschema@.language_rule (VALUE));
 
 COMMENT ON DOMAIN LANGUAGE IS 'ISO 639';
 

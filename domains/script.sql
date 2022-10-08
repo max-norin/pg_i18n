@@ -1,5 +1,5 @@
 CREATE DOMAIN SCRIPT AS VARCHAR(4)
-CHECK (@extschema@.script (VALUE));
+CHECK (@extschema@.script_rule (VALUE));
 
 COMMENT ON DOMAIN SCRIPT IS 'ISO 15924';
 

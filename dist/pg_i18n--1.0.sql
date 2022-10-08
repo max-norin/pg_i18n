@@ -409,7 +409,7 @@ COMMENT ON FUNCTION update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS '
 /*
 =================== LANG =================== 
 */
-CREATE FUNCTION lang ("value" TEXT)
+CREATE FUNCTION lang_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 DECLARE
@@ -431,12 +431,12 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION lang (TEXT) IS 'RFC 5646';
+COMMENT ON FUNCTION lang_rule (TEXT) IS 'RFC 5646';
 
 /*
 =================== LANGUAGE =================== 
 */
-CREATE FUNCTION language ("value" TEXT)
+CREATE FUNCTION language_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
@@ -447,12 +447,12 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION language (TEXT) IS 'ISO 639';
+COMMENT ON FUNCTION language_rule (TEXT) IS 'ISO 639';
 
 /*
 =================== REGION =================== 
 */
-CREATE FUNCTION region ("value" TEXT)
+CREATE FUNCTION region_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
@@ -463,12 +463,12 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION region (TEXT) IS 'ISO 3166-1';
+COMMENT ON FUNCTION region_rule (TEXT) IS 'ISO 3166-1';
 
 /*
 =================== SCRIPT =================== 
 */
-CREATE FUNCTION script ("value" TEXT)
+CREATE FUNCTION script_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
@@ -479,13 +479,13 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION script (TEXT) IS 'ISO 15924';
+COMMENT ON FUNCTION script_rule (TEXT) IS 'ISO 15924';
 
 /*
 =================== LANG =================== 
 */
 CREATE DOMAIN LANG AS VARCHAR(11)
-CHECK (@extschema@.lang (VALUE));
+CHECK (@extschema@.lang_rule (VALUE));
 
 COMMENT ON DOMAIN LANG IS 'RFC 5646';
 
@@ -493,7 +493,7 @@ COMMENT ON DOMAIN LANG IS 'RFC 5646';
 =================== LANGUAGE =================== 
 */
 CREATE DOMAIN LANGUAGE AS VARCHAR(3)
-CHECK (@extschema@.language (VALUE));
+CHECK (@extschema@.language_rule (VALUE));
 
 COMMENT ON DOMAIN LANGUAGE IS 'ISO 639';
 
@@ -501,7 +501,7 @@ COMMENT ON DOMAIN LANGUAGE IS 'ISO 639';
 =================== REGION =================== 
 */
 CREATE DOMAIN REGION AS VARCHAR(2)
-CHECK (@extschema@.region (VALUE));
+CHECK (@extschema@.region_rule (VALUE));
 
 COMMENT ON DOMAIN REGION IS 'ISO 3166-1';
 
@@ -509,7 +509,7 @@ COMMENT ON DOMAIN REGION IS 'ISO 3166-1';
 =================== SCRIPT =================== 
 */
 CREATE DOMAIN SCRIPT AS VARCHAR(4)
-CHECK (@extschema@.script (VALUE));
+CHECK (@extschema@.script_rule (VALUE));
 
 COMMENT ON DOMAIN SCRIPT IS 'ISO 15924';
 
