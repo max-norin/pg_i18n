@@ -17,7 +17,7 @@ DECLARE
     "record"              JSONB    NOT NULL ='{}';
 BEGIN
     -- update and return record from lb_table
-    "lb_record" = update_using_records("lb_table", "ch_columns", OLD, NEW);
+    "lb_record" = @extschema@.update_using_records("lb_table", "ch_columns", OLD, NEW);
     -- join query result with target table record
     -- for the correctness of data types and adding the necessary data to lbt_table
     NEW = jsonb_populate_record(NEW, "lb_record");
