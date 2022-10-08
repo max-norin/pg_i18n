@@ -8,12 +8,17 @@ BEGIN
     IF ("lb_table" IS NULL) OR ("lbt_table" IS NULL) THEN
         RAISE EXCEPTION USING MESSAGE = '"lb_table" and "lbt_table" cannot be NULL';
     END IF;
+
+    -- add default_lang in select
     IF 'default_lang' = ANY ("columns") THEN
         "select" = array_prepend('(b."default_lang" = bt."lang") IS TRUE AS "lang_is_default"'::TEXT, "select");
     END IF;
+    -- set where
     IF "where" IS NULL THEN
         "where" = 'TRUE';
     END IF;
+
+    -- create view
     EXECUTE format('
         CREATE VIEW %1s AS
         SELECT %2s
@@ -21,6 +26,7 @@ BEGIN
             LEFT JOIN %4s bt USING (%5s)
             WHERE %6s;
     ', "name", array_to_string("select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
+    -- create triggers
     EXECUTE format('
         CREATE TRIGGER "insert"
             INSTEAD OF INSERT
