@@ -10,9 +10,9 @@ BEGIN
     END IF;
     "index" = 1;
     WHILE "index" <= "length" LOOP
-            "a" = array_remove("a","b"["index"]);
-            "index" = "index" + 1;
-        END LOOP;
+        "a" = array_remove("a","b"["index"]);
+        "index" = "index" + 1;
+    END LOOP;
     RETURN "a";
 END;
 $$
