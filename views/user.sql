@@ -28,6 +28,7 @@ BEGIN
     END IF;
 
     -- create view
+    -- USING — это сокращённая запись условия, полезная в ситуации, когда с обеих сторон соединения столбцы имеют одинаковые имена
     EXECUTE format('
         CREATE VIEW %1s AS
         SELECT %2s
@@ -36,6 +37,9 @@ BEGIN
             WHERE %6s;
     ', "name", array_to_string("select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
     -- создание triggers для редактиварония представления
+    -- %L - равнозначно вызову quote_nullable. Переводит данное значение в текстовый вид и заключает в апострофы
+    -- как текстовую строку, при этом для аргумента NULL возвращается строка NULL.
+    -- Символы апостроф и обратная косая черта дублируются должным образом.
     EXECUTE format('
         CREATE TRIGGER "insert"
             INSTEAD OF INSERT

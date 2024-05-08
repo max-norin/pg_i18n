@@ -25,8 +25,7 @@ BEGIN
     IF array_length("select", 1) IS NULL THEN
         -- если в таблице bt нет записей, то это строка взята из таблицы по умолчанию - свойство is_default
         "select" = array_append("select", '(bt.*) IS NULL AS "is_default"');
-        -- указание свойства языка из таблицы  lang
-        -- TODO надо ли оно вообще? зачем тут делать CROSS JOIN
+        -- свойство язык из таблицы langs, используется из CROSS JOIN "langs"
         "select" = array_append("select", '"langs"."lang"');
         FOREACH "lb_column" IN ARRAY "lb_columns" LOOP
             -- если колонка lb_column есть в таблице lbt_table,
@@ -46,6 +45,8 @@ BEGIN
 
     -- TODO проверить почему тут указаны  %1s %2L, а не %I
     -- create view
+    -- CROSS JOIN "langs", чтобы в представлении были указанны все языки из таблицы "langs"
+    -- USING — это сокращённая запись условия, полезная в ситуации, когда с обеих сторон соединения столбцы имеют одинаковые имена
     EXECUTE format('
         CREATE VIEW %1s AS
         SELECT %2s
@@ -55,6 +56,9 @@ BEGIN
             WHERE %6s;
     ', "name", array_to_string("select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
     -- создание trigger для редактиварония представления
+    -- %L - равнозначно вызову quote_nullable. Переводит данное значение в текстовый вид и заключает в апострофы
+    -- как текстовую строку, при этом для аргумента NULL возвращается строка NULL.
+    -- Символы апостроф и обратная косая черта дублируются должным образом.
     EXECUTE format('
         CREATE TRIGGER "update"
             INSTEAD OF UPDATE
