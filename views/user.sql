@@ -6,11 +6,15 @@ DECLARE
     -- имя будущей таблицы
     "name"       CONSTANT TEXT NOT NULL   = COALESCE(@extschema@.format_table_name("name"), @extschema@.format_table_name("lb_table"::TEXT, 'v_'));
     "columns"    CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("lb_table");
-    "pk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("lb_table");
+    "pk_columns" CONSTANT TEXT[]          = @extschema@.get_primary_key("lb_table");
 BEGIN
     -- проверка, что таблицы заданы
     IF ("lb_table" IS NULL) OR ("lbt_table" IS NULL) THEN
         RAISE EXCEPTION USING MESSAGE = '"lb_table" and "lbt_table" cannot be NULL';
+    END IF;
+    -- проверка, что pk_columns существуют
+    IF ("pk_columns" IS NULL) THEN
+        RAISE EXCEPTION USING MESSAGE = '"lb_table" table must have primary keys';
     END IF;
 
     -- add default_lang in select
