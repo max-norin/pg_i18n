@@ -1,4 +1,29 @@
 /*
+=================== GET_COLUMNS ===================
+*/
+CREATE FUNCTION get_columns ("relid" OID, "has_generated_column" BOOLEAN = TRUE)
+    RETURNS TEXT[]
+AS $$
+BEGIN
+    -- https://postgresql.org/docs/current/catalog-pg-attribute.html
+    RETURN (
+        SELECT array_agg(a."attname")
+        FROM "pg_attribute" AS a
+        WHERE "attrelid" = "relid"
+          AND a."attnum" > 0
+          AND ("has_generated_column" OR a.attgenerated = '')
+          AND NOT a.attisdropped);
+END
+$$
+    LANGUAGE plpgsql
+    STABLE
+    RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION get_columns (OID, BOOLEAN, TEXT) IS 'get table columns';
+
+DROP FUNCTION get_columns ("relid" OID, "has_generated_column" BOOLEAN, "rel" TEXT);
+
+/*
 =================== LANG_BASE ===================
 */
 CREATE RULE "update" AS ON UPDATE TO @extschema@."lang_base" DO INSTEAD NOTHING;
