@@ -1,4 +1,4 @@
--- получение primary key
+-- получение колонок primary key
 CREATE FUNCTION get_primary_key ("relid" OID)
     RETURNS TEXT[]
     AS $$
