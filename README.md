@@ -52,6 +52,9 @@ The `create_dictionary_view` procedure will create a view in which, in each lang
 provided with a translation if it is in the translation table, else a default value.
 Data in views can update.
 
+Important condition: in the translation table, the column pointing to the foreign key to the main table 
+had the same name as the column specified as `PRIMARY KEY` in the main table.
+
 ```postgresql
 -- main table
 CREATE TABLE "dictionary"
@@ -78,6 +81,9 @@ CALL create_dictionary_view('v_dictionary'::TEXT, 'dictionary'::REGCLASS, 'dicti
 The `create_user_view` procedure will create a view in which results are returned only if there is a
 translation.
 Data in views can insert and update.
+
+Important condition: in the translation table, the column pointing to the foreign key to the main table
+had the same name as the column specified as `PRIMARY KEY` in the main table.
 
 ```postgresql
 -- main table. note: it inherits from "lang_base"
