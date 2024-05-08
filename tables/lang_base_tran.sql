@@ -1,3 +1,5 @@
+-- Словарный способ - на каждый языковой тег будет предоставлен перевод.
+-- Если перевода нет в таблице переводов, то будет представлено значение по умолчанию из основной таблицы.
 CREATE TABLE @extschema@."lang_base_tran" (
     "lang" @extschema@.LANG NOT NULL REFERENCES @extschema@."langs" ("lang") ON UPDATE CASCADE
 );

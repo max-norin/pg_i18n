@@ -1,3 +1,4 @@
+-- Пользовательский способ - выдаются только переведенные данные.
 CREATE TABLE @extschema@."lang_base" (
     "default_lang" @extschema@.LANG NOT NULL REFERENCES @extschema@."langs" ("lang") ON UPDATE CASCADE
 );
