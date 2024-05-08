@@ -1,4 +1,4 @@
-CREATE FUNCTION region_rule ("value" TEXT)
+CREATE FUNCTION @extschema@.region_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
@@ -6,8 +6,8 @@ BEGIN
 END
 $$
 LANGUAGE plpgsql
-IMMUTABLE
-RETURNS NULL ON NULL INPUT;
+IMMUTABLE -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов
+RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
-COMMENT ON FUNCTION region_rule (TEXT) IS 'ISO 3166-1';
+COMMENT ON FUNCTION @extschema@.region_rule (TEXT) IS 'ISO 3166-1';
 

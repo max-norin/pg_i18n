@@ -478,7 +478,7 @@ COMMENT ON FUNCTION update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS '
 /*
 =================== LANG ===================
 */
-CREATE FUNCTION lang_rule ("value" TEXT)
+CREATE FUNCTION @extschema@.lang_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 DECLARE
@@ -500,12 +500,12 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION lang_rule (TEXT) IS 'RFC 5646';
+COMMENT ON FUNCTION @extschema@.lang_rule (TEXT) IS 'RFC 5646';
 
 /*
 =================== LANGUAGE ===================
 */
-CREATE FUNCTION language_rule ("value" TEXT)
+CREATE FUNCTION @extschema@.language_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
@@ -516,12 +516,12 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION language_rule (TEXT) IS 'ISO 639';
+COMMENT ON FUNCTION @extschema@.language_rule (TEXT) IS 'ISO 639';
 
 /*
 =================== REGION ===================
 */
-CREATE FUNCTION region_rule ("value" TEXT)
+CREATE FUNCTION @extschema@.region_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
@@ -532,12 +532,12 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION region_rule (TEXT) IS 'ISO 3166-1';
+COMMENT ON FUNCTION @extschema@.region_rule (TEXT) IS 'ISO 3166-1';
 
 /*
 =================== SCRIPT ===================
 */
-CREATE FUNCTION script_rule ("value" TEXT)
+CREATE FUNCTION @extschema@.script_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 BEGIN
@@ -548,7 +548,7 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION script_rule (TEXT) IS 'ISO 15924';
+COMMENT ON FUNCTION @extschema@.script_rule (TEXT) IS 'ISO 15924';
 
 /*
 =================== LANG ===================
