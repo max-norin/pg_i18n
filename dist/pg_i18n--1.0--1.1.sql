@@ -1,7 +1,7 @@
 /*
 =================== GET_COLUMNS ===================
 */
-CREATE FUNCTION get_columns ("relid" OID, "has_generated_column" BOOLEAN = TRUE)
+CREATE FUNCTION  @extschema@.get_columns ("relid" OID, "has_generated_column" BOOLEAN = TRUE)
     RETURNS TEXT[]
 AS $$
 BEGIN
@@ -19,9 +19,9 @@ $$
     STABLE
     RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_columns (OID, BOOLEAN, TEXT) IS 'get table columns';
+COMMENT ON FUNCTION  @extschema@.get_columns (OID, BOOLEAN, TEXT) IS 'get table columns';
 
-DROP FUNCTION get_columns ("relid" OID, "has_generated_column" BOOLEAN, "rel" TEXT);
+DROP FUNCTION  @extschema@.get_columns ("relid" OID, "has_generated_column" BOOLEAN, "rel" TEXT);
 
 /*
 =================== LANG_BASE ===================
