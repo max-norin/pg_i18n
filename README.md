@@ -23,7 +23,7 @@ Install the extension.
 ```postgresql
 CREATE EXTENSION "pg_i18n"
     SCHEMA "dictionaries"
-    VERSION '1.0';
+    VERSION '1.1';
 ```
 
 [More about the extension and the control file](https://www.postgresql.org/docs/current/extend-extensions.html)

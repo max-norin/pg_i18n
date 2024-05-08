@@ -20,7 +20,7 @@ ALTER ROLE "postgres" SET search_path TO "public", "dictionaries";
 ```postgresql
 CREATE EXTENSION "pg_i18n"
     SCHEMA "dictionaries"
-    VERSION '1.0';
+    VERSION '1.1';
 ```
 [Подробнее про расширение и файл control](https://postgrespro.ru/docs/postgresql/14/extend-extensions)
 
