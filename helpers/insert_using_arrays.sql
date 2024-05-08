@@ -15,6 +15,6 @@ $$
 LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER
-RETURNS NULL ON NULL INPUT;
+RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 COMMENT ON FUNCTION insert_using_arrays (REGCLASS, TEXT[], TEXT[], RECORD) IS 'insert into table $1 using array of columns, array of values and NEW record';

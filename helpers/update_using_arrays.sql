@@ -19,6 +19,6 @@ $$
 LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER
-RETURNS NULL ON NULL INPUT;
+RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 COMMENT ON FUNCTION update_using_arrays (REGCLASS, TEXT[], TEXT[], TEXT[], TEXT[], RECORD, RECORD) IS 'update table $1 using array of primary keys, array of values and OLD NEW records';

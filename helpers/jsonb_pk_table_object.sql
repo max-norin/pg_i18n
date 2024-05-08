@@ -17,7 +17,7 @@ BEGIN
 END
 $$
 LANGUAGE plpgsql
-STABLE
-RETURNS NULL ON NULL INPUT;
+STABLE -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов внутри одного SQL запроса
+RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 COMMENT ON FUNCTION jsonb_pk_table_object (OID, JSONB) IS 'get jsonb object with primary key columns from table $1 and values from record $2';

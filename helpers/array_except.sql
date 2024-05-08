@@ -17,7 +17,7 @@ BEGIN
 END;
 $$
 LANGUAGE plpgsql
-IMMUTABLE;
+IMMUTABLE; -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов
 
 COMMENT ON FUNCTION array_except (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
 

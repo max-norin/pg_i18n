@@ -1,3 +1,4 @@
+-- получение primary key
 CREATE FUNCTION get_primary_key ("relid" OID)
     RETURNS TEXT[]
     AS $$
@@ -14,8 +15,8 @@ BEGIN
 END
 $$
 LANGUAGE plpgsql
-STABLE
-RETURNS NULL ON NULL INPUT;
+STABLE -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов внутри одного SQL запроса
+RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 COMMENT ON FUNCTION get_primary_key (OID) IS 'get table primary key columns';
 

@@ -36,6 +36,6 @@ $$
 LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER
-RETURNS NULL ON NULL INPUT;
+RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 COMMENT ON FUNCTION update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';

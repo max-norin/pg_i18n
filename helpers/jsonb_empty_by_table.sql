@@ -14,6 +14,6 @@ BEGIN
 END
 $$
 LANGUAGE plpgsql
-IMMUTABLE;
+IMMUTABLE; -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов
 
 COMMENT ON FUNCTION jsonb_empty_by_table (OID) IS 'get jsonb object with empty columns from table $1';
