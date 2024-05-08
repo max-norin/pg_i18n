@@ -122,7 +122,7 @@ COMMENT ON FUNCTION get_constraintdefs (OID) IS 'get table constraint definition
 /*
 =================== GET_PRIMARY_KEY ===================
 */
-CREATE FUNCTION get_primary_key ("relid" OID)
+CREATE FUNCTION @extschema@.get_primary_key ("relid" OID)
     RETURNS TEXT[]
     AS $$
 BEGIN
@@ -141,7 +141,7 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_primary_key (OID) IS 'get table primary key columns';
+COMMENT ON FUNCTION @extschema@.get_primary_key (OID) IS 'get table primary key columns';
 
 /*
 =================== GET_PRIMARY_KEY_NAME ===================
