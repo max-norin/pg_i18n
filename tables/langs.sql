@@ -1,4 +1,4 @@
-CREATE TABLE "langs"
+CREATE TABLE @extschema@."langs"
 (
     "lang"      @extschema@.LANG PRIMARY KEY
                 GENERATED ALWAYS AS (
@@ -13,5 +13,5 @@ CREATE TABLE "langs"
     "title"     VARCHAR(50) NOT NULL UNIQUE
 );
 
-COMMENT ON TABLE "langs" IS 'RFC 5646';
+COMMENT ON TABLE @extschema@."langs" IS 'RFC 5646';
 
