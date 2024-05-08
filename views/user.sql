@@ -1,6 +1,6 @@
 -- создание представления для пользовательского способа
 -- представление не только отображает данные, но даёт возможность редактирования
-CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{*}', "where" TEXT = NULL)
+CREATE PROCEDURE @extschema@.create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{*}', "where" TEXT = NULL)
     AS $$
 DECLARE
     -- имя будущей таблицы
