@@ -1,5 +1,5 @@
 /*
-=================== ARRAY_EXCEPT =================== 
+=================== ARRAY_EXCEPT ===================
 */
 CREATE FUNCTION array_except ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
@@ -31,7 +31,7 @@ CREATE OPERATOR - (
 COMMENT ON OPERATOR - (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
 
 /*
-=================== ARRAY_INTERSECT =================== 
+=================== ARRAY_INTERSECT ===================
 */
 CREATE FUNCTION array_intersect ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
@@ -52,7 +52,7 @@ CREATE OPERATOR & (
 COMMENT ON OPERATOR & (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
 
 /*
-=================== FORMAT_TABLE_NAME =================== 
+=================== FORMAT_TABLE_NAME ===================
 */
 CREATE FUNCTION format_table_name ("name" TEXT, "prefix" TEXT = '')
     RETURNS TEXT
@@ -76,7 +76,7 @@ IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
 /*
-=================== GET_COLUMNS =================== 
+=================== GET_COLUMNS ===================
 */
 CREATE FUNCTION get_columns ("relid" OID, "has_generated_column" BOOLEAN = TRUE, "rel" TEXT = '')
     RETURNS TEXT[]
@@ -99,7 +99,7 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION get_columns (OID, BOOLEAN, TEXT) IS 'get table columns';
 
 /*
-=================== GET_CONSTRAINTDEFS =================== 
+=================== GET_CONSTRAINTDEFS ===================
 */
 CREATE FUNCTION get_constraintdefs ("relid" OID)
     RETURNS TEXT[]
@@ -120,7 +120,7 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION get_constraintdefs (OID) IS 'get table constraint definitions';
 
 /*
-=================== GET_PRIMARY_KEY =================== 
+=================== GET_PRIMARY_KEY ===================
 */
 CREATE FUNCTION get_primary_key ("relid" OID)
     RETURNS TEXT[]
@@ -144,7 +144,7 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION get_primary_key (OID) IS 'get table primary key columns';
 
 /*
-=================== GET_PRIMARY_KEY_NAME =================== 
+=================== GET_PRIMARY_KEY_NAME ===================
 */
 CREATE FUNCTION get_primary_key_name ("relid" OID)
     RETURNS TEXT
@@ -169,7 +169,7 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION get_primary_key_name (OID) IS 'get table primary key name';
 
 /*
-=================== INSERT_OR_UPDATE_USING_ARRAYS =================== 
+=================== INSERT_OR_UPDATE_USING_ARRAYS ===================
 */
 CREATE FUNCTION insert_or_update_using_arrays ("table" REGCLASS, "columns" TEXT[], "values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "new" RECORD)
     RETURNS JSONB
@@ -204,7 +204,7 @@ $$
 
 COMMENT ON FUNCTION insert_or_update_using_arrays (REGCLASS, TEXT[], TEXT[], TEXT[], TEXT[], RECORD) IS 'insert or update table $1 using array of columns keys, array of values and NEW record';
 /*
-=================== INSERT_OR_UPDATE_USING_RECORDS =================== 
+=================== INSERT_OR_UPDATE_USING_RECORDS ===================
 */
 CREATE FUNCTION insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
@@ -238,7 +238,7 @@ $$
 
 COMMENT ON FUNCTION insert_or_update_using_records (REGCLASS, RECORD) IS 'insert or update table using NEW record';
 /*
-=================== INSERT_USING_ARRAYS =================== 
+=================== INSERT_USING_ARRAYS ===================
 */
 CREATE OR REPLACE FUNCTION insert_using_arrays ("table" REGCLASS, "columns" TEXT[],  "values" TEXT[], "new" RECORD)
     RETURNS JSONB
@@ -261,7 +261,7 @@ RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION insert_using_arrays (REGCLASS, TEXT[], TEXT[], RECORD) IS 'insert into table $1 using array of columns, array of values and NEW record';
 /*
-=================== INSERT_USING_RECORDS =================== 
+=================== INSERT_USING_RECORDS ===================
 */
 CREATE FUNCTION insert_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
@@ -306,7 +306,7 @@ RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION insert_using_records (REGCLASS, RECORD) IS 'insert into table $1 using NEW record';
 /*
-=================== JSONB_EMPTY_BY_TABLE =================== 
+=================== JSONB_EMPTY_BY_TABLE ===================
 */
 CREATE FUNCTION jsonb_empty_by_table ("relid" OID)
     RETURNS JSONB
@@ -328,7 +328,7 @@ IMMUTABLE;
 
 COMMENT ON FUNCTION jsonb_empty_by_table (OID) IS 'get jsonb object with empty columns from table $1';
 /*
-=================== JSONB_EXCEPT =================== 
+=================== JSONB_EXCEPT ===================
 */
 CREATE FUNCTION jsonb_except ("a" JSONB, "b" JSONB)
     RETURNS JSONB
@@ -357,7 +357,7 @@ CREATE OPERATOR - (
 COMMENT ON OPERATOR - (JSONB, JSONB) IS '$1 EXCEPT $2';
 
 /*
-=================== JSONB_OBJECT_FIELDS =================== 
+=================== JSONB_OBJECT_FIELDS ===================
 */
 CREATE FUNCTION jsonb_object_fields ("value" JSONB, "paths" TEXT[])
     RETURNS JSONB
@@ -379,7 +379,7 @@ CREATE OPERATOR -> (
 COMMENT ON OPERATOR -> (JSONB, TEXT[]) IS 'get json object fields';
 
 /*
-=================== JSONB_PK_TABLE_OBJECT =================== 
+=================== JSONB_PK_TABLE_OBJECT ===================
 */
 CREATE FUNCTION jsonb_pk_table_object ("relid" OID, "record" JSONB)
     RETURNS JSONB
@@ -405,7 +405,7 @@ RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION jsonb_pk_table_object (OID, JSONB) IS 'get jsonb object with primary key columns from table $1 and values from record $2';
 /*
-=================== UPDATE_USING_ARRAYS =================== 
+=================== UPDATE_USING_ARRAYS ===================
 */
 CREATE FUNCTION update_using_arrays ("table" REGCLASS, "pk_columns" TEXT[], "pk_values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "old" RECORD, "new" RECORD)
     RETURNS JSONB
@@ -432,7 +432,7 @@ RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION update_using_arrays (REGCLASS, TEXT[], TEXT[], TEXT[], TEXT[], RECORD, RECORD) IS 'update table $1 using array of primary keys, array of values and OLD NEW records';
 /*
-=================== UPDATE_USING_RECORDS =================== 
+=================== UPDATE_USING_RECORDS ===================
 */
 CREATE FUNCTION update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
     RETURNS JSONB
@@ -476,7 +476,7 @@ RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';
 /*
-=================== LANG =================== 
+=================== LANG ===================
 */
 CREATE FUNCTION lang_rule ("value" TEXT)
     RETURNS BOOLEAN
@@ -503,7 +503,7 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION lang_rule (TEXT) IS 'RFC 5646';
 
 /*
-=================== LANGUAGE =================== 
+=================== LANGUAGE ===================
 */
 CREATE FUNCTION language_rule ("value" TEXT)
     RETURNS BOOLEAN
@@ -519,7 +519,7 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION language_rule (TEXT) IS 'ISO 639';
 
 /*
-=================== REGION =================== 
+=================== REGION ===================
 */
 CREATE FUNCTION region_rule ("value" TEXT)
     RETURNS BOOLEAN
@@ -535,7 +535,7 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION region_rule (TEXT) IS 'ISO 3166-1';
 
 /*
-=================== SCRIPT =================== 
+=================== SCRIPT ===================
 */
 CREATE FUNCTION script_rule ("value" TEXT)
     RETURNS BOOLEAN
@@ -551,41 +551,41 @@ RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION script_rule (TEXT) IS 'ISO 15924';
 
 /*
-=================== LANG =================== 
+=================== LANG ===================
 */
-CREATE DOMAIN LANG AS VARCHAR(11)
+CREATE DOMAIN @extschema@.LANG AS VARCHAR(11)
 CHECK (@extschema@.lang_rule (VALUE));
 
-COMMENT ON DOMAIN LANG IS 'RFC 5646';
+COMMENT ON DOMAIN @extschema@.LANG IS 'RFC 5646';
 
 /*
-=================== LANGUAGE =================== 
+=================== LANGUAGE ===================
 */
-CREATE DOMAIN LANGUAGE AS VARCHAR(3)
+CREATE DOMAIN @extschema@.LANGUAGE AS VARCHAR(3)
 CHECK (@extschema@.language_rule (VALUE));
 
-COMMENT ON DOMAIN LANGUAGE IS 'ISO 639';
+COMMENT ON DOMAIN @extschema@.LANGUAGE IS 'ISO 639';
 
 /*
-=================== REGION =================== 
+=================== REGION ===================
 */
-CREATE DOMAIN REGION AS VARCHAR(2)
+CREATE DOMAIN @extschema@.REGION AS VARCHAR(2)
 CHECK (@extschema@.region_rule (VALUE));
 
-COMMENT ON DOMAIN REGION IS 'ISO 3166-1';
+COMMENT ON DOMAIN @extschema@.REGION IS 'ISO 3166-1';
 
 /*
-=================== SCRIPT =================== 
+=================== SCRIPT ===================
 */
-CREATE DOMAIN SCRIPT AS VARCHAR(4)
+CREATE DOMAIN @extschema@.SCRIPT AS VARCHAR(4)
 CHECK (@extschema@.script_rule (VALUE));
 
-COMMENT ON DOMAIN SCRIPT IS 'ISO 15924';
+COMMENT ON DOMAIN @extschema@.SCRIPT IS 'ISO 15924';
 
 /*
-=================== LANGS =================== 
+=================== LANGS ===================
 */
-CREATE TABLE "langs"
+CREATE TABLE @extschema@."langs"
 (
     "lang"      @extschema@.LANG PRIMARY KEY
                 GENERATED ALWAYS AS (
@@ -600,32 +600,32 @@ CREATE TABLE "langs"
     "title"     VARCHAR(50) NOT NULL UNIQUE
 );
 
-COMMENT ON TABLE "langs" IS 'RFC 5646';
+COMMENT ON TABLE @extschema@."langs" IS 'RFC 5646';
 
 /*
-=================== LANG_BASE =================== 
+=================== LANG_BASE ===================
 */
-CREATE TABLE "lang_base" (
-    "default_lang" @extschema@.LANG NOT NULL REFERENCES "langs" ("lang") ON UPDATE CASCADE
+CREATE TABLE @extschema@."lang_base" (
+    "default_lang" @extschema@.LANG NOT NULL REFERENCES @extschema@."langs" ("lang") ON UPDATE CASCADE
 );
 
-CREATE RULE "lang_base__insert" AS ON INSERT TO "lang_base"
+CREATE RULE "insert" AS ON INSERT TO @extschema@."lang_base"
     DO INSTEAD
     NOTHING;
 
 /*
-=================== LANG_BASE_TRAN =================== 
+=================== LANG_BASE_TRAN ===================
 */
 CREATE TABLE "lang_base_tran" (
-    "lang" @extschema@.LANG NOT NULL REFERENCES "langs" ("lang") ON UPDATE CASCADE
+    "lang" @extschema@.LANG NOT NULL REFERENCES @extschema@."langs" ("lang") ON UPDATE CASCADE
 );
 
-CREATE RULE "lang_base_tran__insert" AS ON INSERT TO "lang_base_tran"
+CREATE RULE "insert" AS ON INSERT TO @extschema@."lang_base_tran"
     DO INSTEAD
     NOTHING;
 
 /*
-=================== ADD_CONSTRAINTS_FROM_LANG_PARENT_TABLES =================== 
+=================== ADD_CONSTRAINTS_FROM_LANG_PARENT_TABLES ===================
 */
 CREATE FUNCTION event_trigger_add_constraints_from_lang_parent_tables ()
     RETURNS EVENT_TRIGGER
@@ -717,7 +717,7 @@ LANGUAGE plpgsql
 VOLATILE;
 
 /*
-=================== DICTINARY =================== 
+=================== DICTINARY ===================
 */
 CREATE PROCEDURE create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL)
     AS $$
@@ -771,7 +771,7 @@ $$
 LANGUAGE plpgsql;
 
 /*
-=================== USER =================== 
+=================== USER ===================
 */
 CREATE PROCEDURE create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{*}', "where" TEXT = NULL)
     AS $$
@@ -819,7 +819,7 @@ $$
 LANGUAGE plpgsql;
 
 /*
-=================== INSERT_USER_VIEW =================== 
+=================== INSERT_USER_VIEW ===================
 */
 CREATE FUNCTION trigger_insert_user_view ()
     RETURNS TRIGGER
@@ -859,7 +859,7 @@ SECURITY DEFINER;
 
 COMMENT ON FUNCTION trigger_insert_user_view () IS 'DON''T USE DEFAULT WITH VIEWS';
 /*
-=================== UPDATE_DICTIONARY_VIEW =================== 
+=================== UPDATE_DICTIONARY_VIEW ===================
 */
 CREATE FUNCTION trigger_update_dictionary_view ()
     RETURNS TRIGGER
@@ -892,7 +892,7 @@ $$
     SECURITY DEFINER;
 
 /*
-=================== UPDATE_USER_VIEW =================== 
+=================== UPDATE_USER_VIEW ===================
 */
 CREATE FUNCTION trigger_update_user_view ()
     RETURNS TRIGGER
@@ -935,7 +935,7 @@ VOLATILE
 SECURITY DEFINER;
 
 /*
-=================== INIT =================== 
+=================== INIT ===================
 */
 -- Chapter 40. Event Triggers - https://postgresql.org/docs/current/event-triggers.html
 -- Event Trigger Functions - https://postgresql.org/docs/current/functions-event-triggers.html
