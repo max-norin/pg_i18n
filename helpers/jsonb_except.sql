@@ -1,4 +1,4 @@
-CREATE FUNCTION jsonb_except ("a" JSONB, "b" JSONB)
+CREATE FUNCTION @extschema@.jsonb_except ("a" JSONB, "b" JSONB)
     RETURNS JSONB
     AS $$
 BEGIN
@@ -16,11 +16,11 @@ $$
 LANGUAGE plpgsql
 IMMUTABLE; -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов
 
-COMMENT ON FUNCTION jsonb_except (JSONB, JSONB) IS '$1 EXCEPT $2';
+COMMENT ON FUNCTION @extschema@.jsonb_except (JSONB, JSONB) IS '$1 EXCEPT $2';
 
-CREATE OPERATOR - (
-    LEFTARG = JSONB, RIGHTARG = JSONB, FUNCTION = jsonb_except
+CREATE OPERATOR @extschema@.- (
+    LEFTARG = JSONB, RIGHTARG = JSONB, FUNCTION = @extschema@.jsonb_except
 );
 
-COMMENT ON OPERATOR - (JSONB, JSONB) IS '$1 EXCEPT $2';
+COMMENT ON OPERATOR @extschema@.- (JSONB, JSONB) IS '$1 EXCEPT $2';
 

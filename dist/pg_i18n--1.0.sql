@@ -101,7 +101,7 @@ COMMENT ON FUNCTION  @extschema@.get_columns (OID, BOOLEAN, TEXT) IS 'get table 
 /*
 =================== GET_CONSTRAINTDEFS ===================
 */
-CREATE FUNCTION get_constraintdefs ("relid" OID)
+CREATE FUNCTION @extschema@.get_constraintdefs ("relid" OID)
     RETURNS TEXT[]
     AS $$
 BEGIN
@@ -117,7 +117,7 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_constraintdefs (OID) IS 'get table constraint definitions';
+COMMENT ON FUNCTION @extschema@.get_constraintdefs (OID) IS 'get table constraint definitions';
 
 /*
 =================== GET_PRIMARY_KEY ===================
@@ -146,7 +146,7 @@ COMMENT ON FUNCTION @extschema@.get_primary_key (OID) IS 'get table primary key 
 /*
 =================== GET_PRIMARY_KEY_NAME ===================
 */
-CREATE FUNCTION get_primary_key_name ("relid" OID)
+CREATE FUNCTION @extschema@.get_primary_key_name ("relid" OID)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -166,12 +166,12 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION get_primary_key_name (OID) IS 'get table primary key name';
+COMMENT ON FUNCTION @extschema@.get_primary_key_name (OID) IS 'get table primary key name';
 
 /*
 =================== INSERT_OR_UPDATE_USING_ARRAYS ===================
 */
-CREATE FUNCTION insert_or_update_using_arrays ("table" REGCLASS, "columns" TEXT[], "values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "new" RECORD)
+CREATE FUNCTION @extschema@.insert_or_update_using_arrays ("table" REGCLASS, "columns" TEXT[], "values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -202,11 +202,11 @@ $$
     SECURITY DEFINER
     RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION insert_or_update_using_arrays (REGCLASS, TEXT[], TEXT[], TEXT[], TEXT[], RECORD) IS 'insert or update table $1 using array of columns keys, array of values and NEW record';
+COMMENT ON FUNCTION @extschema@.insert_or_update_using_arrays (REGCLASS, TEXT[], TEXT[], TEXT[], TEXT[], RECORD) IS 'insert or update table $1 using array of columns keys, array of values and NEW record';
 /*
 =================== INSERT_OR_UPDATE_USING_RECORDS ===================
 */
-CREATE FUNCTION insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
+CREATE FUNCTION @extschema@.insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -236,7 +236,7 @@ $$
     SECURITY DEFINER
     RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION insert_or_update_using_records (REGCLASS, RECORD) IS 'insert or update table using NEW record';
+COMMENT ON FUNCTION @extschema@.insert_or_update_using_records (REGCLASS, RECORD) IS 'insert or update table using NEW record';
 /*
 =================== INSERT_USING_ARRAYS ===================
 */
@@ -308,7 +308,7 @@ COMMENT ON FUNCTION @extschema@.insert_using_records (REGCLASS, RECORD) IS 'inse
 /*
 =================== JSONB_EMPTY_BY_TABLE ===================
 */
-CREATE FUNCTION jsonb_empty_by_table ("relid" OID)
+CREATE FUNCTION @extschema@.jsonb_empty_by_table ("relid" OID)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -326,11 +326,11 @@ $$
 LANGUAGE plpgsql
 IMMUTABLE;
 
-COMMENT ON FUNCTION jsonb_empty_by_table (OID) IS 'get jsonb object with empty columns from table $1';
+COMMENT ON FUNCTION @extschema@.jsonb_empty_by_table (OID) IS 'get jsonb object with empty columns from table $1';
 /*
 =================== JSONB_EXCEPT ===================
 */
-CREATE FUNCTION jsonb_except ("a" JSONB, "b" JSONB)
+CREATE FUNCTION @extschema@.jsonb_except ("a" JSONB, "b" JSONB)
     RETURNS JSONB
     AS $$
 BEGIN
@@ -348,18 +348,18 @@ $$
 LANGUAGE plpgsql
 IMMUTABLE;
 
-COMMENT ON FUNCTION jsonb_except (JSONB, JSONB) IS '$1 EXCEPT $2';
+COMMENT ON FUNCTION @extschema@.jsonb_except (JSONB, JSONB) IS '$1 EXCEPT $2';
 
-CREATE OPERATOR - (
-    LEFTARG = JSONB, RIGHTARG = JSONB, FUNCTION = jsonb_except
+CREATE OPERATOR @extschema@.- (
+    LEFTARG = JSONB, RIGHTARG = JSONB, FUNCTION = @extschema@.jsonb_except
 );
 
-COMMENT ON OPERATOR - (JSONB, JSONB) IS '$1 EXCEPT $2';
+COMMENT ON OPERATOR @extschema@.- (JSONB, JSONB) IS '$1 EXCEPT $2';
 
 /*
 =================== JSONB_OBJECT_FIELDS ===================
 */
-CREATE FUNCTION jsonb_object_fields ("value" JSONB, "paths" TEXT[])
+CREATE FUNCTION @extschema@.jsonb_object_fields ("value" JSONB, "paths" TEXT[])
     RETURNS JSONB
     AS $$
 BEGIN
@@ -370,18 +370,18 @@ LANGUAGE plpgsql
 IMMUTABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION jsonb_object_fields (JSONB, TEXT[]) IS 'get json object fields';
+COMMENT ON FUNCTION @extschema@.jsonb_object_fields (JSONB, TEXT[]) IS 'get json object fields';
 
-CREATE OPERATOR -> (
-    LEFTARG = JSONB, RIGHTARG = TEXT[], FUNCTION = jsonb_object_fields
+CREATE OPERATOR @extschema@.-> (
+    LEFTARG = JSONB, RIGHTARG = TEXT[], FUNCTION = @extschema@.jsonb_object_fields
 );
 
-COMMENT ON OPERATOR -> (JSONB, TEXT[]) IS 'get json object fields';
+COMMENT ON OPERATOR @extschema@.-> (JSONB, TEXT[]) IS 'get json object fields';
 
 /*
 =================== JSONB_PK_TABLE_OBJECT ===================
 */
-CREATE FUNCTION jsonb_pk_table_object ("relid" OID, "record" JSONB)
+CREATE FUNCTION @extschema@.jsonb_pk_table_object ("relid" OID, "record" JSONB)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -403,7 +403,7 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION jsonb_pk_table_object (OID, JSONB) IS 'get jsonb object with primary key columns from table $1 and values from record $2';
+COMMENT ON FUNCTION @extschema@.jsonb_pk_table_object (OID, JSONB) IS 'get jsonb object with primary key columns from table $1 and values from record $2';
 /*
 =================== UPDATE_USING_ARRAYS ===================
 */
@@ -821,7 +821,7 @@ LANGUAGE plpgsql;
 /*
 =================== INSERT_USER_VIEW ===================
 */
-CREATE FUNCTION trigger_insert_user_view ()
+CREATE FUNCTION @extschema@.trigger_insert_user_view ()
     RETURNS TRIGGER
     AS $$
 DECLARE
@@ -861,7 +861,7 @@ COMMENT ON FUNCTION trigger_insert_user_view () IS 'DON''T USE DEFAULT WITH VIEW
 /*
 =================== UPDATE_DICTIONARY_VIEW ===================
 */
-CREATE FUNCTION trigger_update_dictionary_view ()
+CREATE FUNCTION @extschema@.trigger_update_dictionary_view ()
     RETURNS TRIGGER
     AS $$
 DECLARE
@@ -894,7 +894,7 @@ $$
 /*
 =================== UPDATE_USER_VIEW ===================
 */
-CREATE FUNCTION trigger_update_user_view ()
+CREATE FUNCTION @extschema@.trigger_update_user_view ()
     RETURNS TRIGGER
     AS $$
 DECLARE

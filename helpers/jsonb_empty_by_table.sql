@@ -1,4 +1,4 @@
-CREATE FUNCTION jsonb_empty_by_table ("relid" OID)
+CREATE FUNCTION @extschema@.jsonb_empty_by_table ("relid" OID)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -16,4 +16,4 @@ $$
 LANGUAGE plpgsql
 IMMUTABLE; -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов
 
-COMMENT ON FUNCTION jsonb_empty_by_table (OID) IS 'get jsonb object with empty columns from table $1';
+COMMENT ON FUNCTION @extschema@.jsonb_empty_by_table (OID) IS 'get jsonb object with empty columns from table $1';
