@@ -46,6 +46,7 @@ DECLARE
     "sk_values"           TEXT[];
     --helpers
     "column"              TEXT;
+    "pk_name"    CONSTANT TEXT  NOT NULL = @extschema@.get_primary_key_name("table");
 BEGIN
     -- set primary key
     FOREACH "column" IN ARRAY "pk_columns" LOOP
@@ -61,9 +62,9 @@ BEGIN
             ON CONFLICT ON CONSTRAINT %4I
             DO UPDATE SET (%5s)=ROW(%6s)
             RETURNING to_json(%7s.*);',
-                   "table", array_to_string("pk_columns" || "sk_columns"), array_to_string("pk_values" || "sk_values"),
+                   "table", array_to_string("pk_columns" || "sk_columns", ','), array_to_string("pk_values" || "sk_values", ','),
                    "pk_name",
-                   array_to_string("sk_columns"), array_to_string("sk_values"),
+                   array_to_string("sk_columns", ','), array_to_string("sk_values", ','),
                    "table")
         INTO "result" USING "new";
 

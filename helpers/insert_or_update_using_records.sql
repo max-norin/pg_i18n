@@ -27,9 +27,9 @@ BEGIN
             ON CONFLICT ON CONSTRAINT %4I
             DO UPDATE SET (%5s)=ROW(%6s)
             RETURNING to_json(%7s.*);',
-                   "table", array_to_string("pk_columns" || "sk_columns"), array_to_string("pk_values" || "sk_values"),
+                   "table", array_to_string("pk_columns" || "sk_columns", ','), array_to_string("pk_values" || "sk_values", ','),
                    "pk_name",
-                   array_to_string("sk_columns"), array_to_string("sk_values"),
+                   array_to_string("sk_columns", ','), array_to_string("sk_values", ','),
                    "table")
         INTO "result" USING "new";
 
