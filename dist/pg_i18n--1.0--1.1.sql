@@ -1,4 +1,11 @@
 /*
+=================== ARRAY_INTERSECT ===================
+*/
+COMMENT ON FUNCTION array_intersect (ANYARRAY, ANYARRAY) IS '$1 INTERSECT $2';
+
+COMMENT ON OPERATOR & (ANYARRAY, ANYARRAY) IS '$1 INTERSECT $2';
+
+/*
 =================== GET_COLUMNS ===================
 */
 CREATE FUNCTION  @extschema@.get_columns ("relid" OID, "has_generated_column" BOOLEAN = TRUE)
