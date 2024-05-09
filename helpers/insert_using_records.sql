@@ -1,4 +1,4 @@
-CREATE FUNCTION insert_using_records ("table" REGCLASS, "new" RECORD)
+CREATE FUNCTION @extschema@.insert_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -47,4 +47,4 @@ VOLATILE -- может делать всё, что угодно, в том чи�
 SECURITY DEFINER -- функция выполняется с правами пользователя, владеющего ей
 RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
-COMMENT ON FUNCTION insert_using_records (REGCLASS, RECORD) IS 'insert into table $1 using NEW record';
+COMMENT ON FUNCTION @extschema@.insert_using_records (REGCLASS, RECORD) IS 'insert into table $1 using NEW record';

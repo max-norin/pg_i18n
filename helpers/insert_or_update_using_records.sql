@@ -1,4 +1,4 @@
-CREATE FUNCTION insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
+CREATE FUNCTION @extschema@.insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -41,4 +41,4 @@ $$
     SECURITY DEFINER -- функция выполняется с правами пользователя, владеющего ей
     RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
-COMMENT ON FUNCTION insert_or_update_using_records (REGCLASS, RECORD) IS 'insert or update table using NEW record';
+COMMENT ON FUNCTION @extschema@.insert_or_update_using_records (REGCLASS, RECORD) IS 'insert or update table using NEW record';

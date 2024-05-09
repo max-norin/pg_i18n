@@ -240,7 +240,7 @@ COMMENT ON FUNCTION insert_or_update_using_records (REGCLASS, RECORD) IS 'insert
 /*
 =================== INSERT_USING_ARRAYS ===================
 */
-CREATE OR REPLACE FUNCTION insert_using_arrays ("table" REGCLASS, "columns" TEXT[],  "values" TEXT[], "new" RECORD)
+CREATE OR REPLACE FUNCTION @extschema@.insert_using_arrays ("table" REGCLASS, "columns" TEXT[],  "values" TEXT[], "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -259,11 +259,11 @@ VOLATILE
 SECURITY DEFINER
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION insert_using_arrays (REGCLASS, TEXT[], TEXT[], RECORD) IS 'insert into table $1 using array of columns, array of values and NEW record';
+COMMENT ON FUNCTION @extschema@.insert_using_arrays (REGCLASS, TEXT[], TEXT[], RECORD) IS 'insert into table $1 using array of columns, array of values and NEW record';
 /*
 =================== INSERT_USING_RECORDS ===================
 */
-CREATE FUNCTION insert_using_records ("table" REGCLASS, "new" RECORD)
+CREATE FUNCTION @extschema@.insert_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -304,7 +304,7 @@ VOLATILE
 SECURITY DEFINER
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION insert_using_records (REGCLASS, RECORD) IS 'insert into table $1 using NEW record';
+COMMENT ON FUNCTION @extschema@.insert_using_records (REGCLASS, RECORD) IS 'insert into table $1 using NEW record';
 /*
 =================== JSONB_EMPTY_BY_TABLE ===================
 */

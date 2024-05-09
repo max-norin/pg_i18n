@@ -33,7 +33,7 @@ DROP FUNCTION  @extschema@.get_columns ("relid" OID, "has_generated_column" BOOL
 /*
 =================== INSERT_OR_UPDATE_USING_RECORDS ===================
 */
-CREATE FUNCTION insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
+CREATE OR REPLACE FUNCTION @extschema@.insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
 AS $$
 DECLARE
@@ -78,12 +78,12 @@ $$
 /*
 =================== INSERT_OR_UPDATE_USING_ARRAYS ===================
 */
-DROP FUNCTION insert_or_update_using_arrays ("table" REGCLASS, "columns" TEXT[], "values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "new" RECORD);
+DROP FUNCTION @extschema@.insert_or_update_using_arrays ("table" REGCLASS, "columns" TEXT[], "values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "new" RECORD);
 
 /*
 =================== INSERT_USING_RECORDS ===================
 */
-CREATE FUNCTION insert_using_records ("table" REGCLASS, "new" RECORD)
+CREATE OR REPLACE FUNCTION @extschema@.insert_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
 AS $$
 DECLARE
@@ -134,7 +134,7 @@ $$
 /*
 =================== INSERT_USING_ARRAYS ===================
 */
-DROP FUNCTION insert_using_arrays ("table" REGCLASS, "columns" TEXT[],  "values" TEXT[], "new" RECORD);
+DROP FUNCTION @extschema@.insert_using_arrays ("table" REGCLASS, "columns" TEXT[],  "values" TEXT[], "new" RECORD);
 
 /*
 =================== UPDATE_USING_RECORDS ===================
