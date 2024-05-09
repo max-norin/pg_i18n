@@ -407,7 +407,7 @@ COMMENT ON FUNCTION jsonb_pk_table_object (OID, JSONB) IS 'get jsonb object with
 /*
 =================== UPDATE_USING_ARRAYS ===================
 */
-CREATE FUNCTION update_using_arrays ("table" REGCLASS, "pk_columns" TEXT[], "pk_values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "old" RECORD, "new" RECORD)
+CREATE FUNCTION @extschema@.update_using_arrays ("table" REGCLASS, "pk_columns" TEXT[], "pk_values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "old" RECORD, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -430,11 +430,11 @@ VOLATILE
 SECURITY DEFINER
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION update_using_arrays (REGCLASS, TEXT[], TEXT[], TEXT[], TEXT[], RECORD, RECORD) IS 'update table $1 using array of primary keys, array of values and OLD NEW records';
+COMMENT ON FUNCTION @extschema@.update_using_arrays (REGCLASS, TEXT[], TEXT[], TEXT[], TEXT[], RECORD, RECORD) IS 'update table $1 using array of primary keys, array of values and OLD NEW records';
 /*
 =================== UPDATE_USING_RECORDS ===================
 */
-CREATE FUNCTION update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
+CREATE FUNCTION @extschema@.update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -474,7 +474,7 @@ VOLATILE
 SECURITY DEFINER
 RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';
+COMMENT ON FUNCTION @extschema@.update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';
 /*
 =================== LANG ===================
 */

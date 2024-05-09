@@ -33,7 +33,7 @@ DROP FUNCTION  @extschema@.get_columns ("relid" OID, "has_generated_column" BOOL
 /*
 =================== UPDATE_USING_RECORDS ===================
 */
-CREATE OR REPLACE FUNCTION update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
+CREATE OR REPLACE FUNCTION @extschema@.update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
     RETURNS JSONB
 AS $$
 DECLARE
@@ -77,7 +77,7 @@ $$
 /*
 =================== UPDATE_USING_ARRAYS ===================
 */
-DROP FUNCTION update_using_arrays ("table" REGCLASS, "pk_columns" TEXT[], "pk_values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "old" RECORD, "new" RECORD);
+DROP FUNCTION @extschema@.update_using_arrays ("table" REGCLASS, "pk_columns" TEXT[], "pk_values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "old" RECORD, "new" RECORD);
 
 /*
 =================== LANG_BASE ===================

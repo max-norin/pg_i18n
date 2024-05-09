@@ -1,5 +1,5 @@
 -- обновление значения old в таблице table на new используя колонки ch_columns
-CREATE FUNCTION update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
+CREATE FUNCTION @extschema@.update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -52,4 +52,4 @@ VOLATILE -- может делать всё, что угодно, в том чи�
 SECURITY DEFINER  -- функция выполняется с правами пользователя, владеющего ей
 RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
-COMMENT ON FUNCTION update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';
+COMMENT ON FUNCTION @extschema@.update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';
