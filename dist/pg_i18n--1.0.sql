@@ -1,7 +1,7 @@
 /*
 =================== ARRAY_EXCEPT ===================
 */
-CREATE FUNCTION array_except ("a" ANYARRAY, "b" ANYARRAY)
+CREATE FUNCTION @extschema@.array_except ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
     AS $$
 DECLARE
@@ -22,13 +22,13 @@ $$
 LANGUAGE plpgsql
 IMMUTABLE;
 
-COMMENT ON FUNCTION array_except (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
+COMMENT ON FUNCTION @extschema@.array_except (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
 
-CREATE OPERATOR - (
-    LEFTARG = ANYARRAY, RIGHTARG = ANYARRAY, FUNCTION = array_except
+CREATE OPERATOR @extschema@.- (
+    LEFTARG = ANYARRAY, RIGHTARG = ANYARRAY, FUNCTION = @extschema@.array_except
 );
 
-COMMENT ON OPERATOR - (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
+COMMENT ON OPERATOR @extschema@.- (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
 
 /*
 =================== ARRAY_INTERSECT ===================
