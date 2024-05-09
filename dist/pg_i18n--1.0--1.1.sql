@@ -31,6 +31,112 @@ COMMENT ON FUNCTION  @extschema@.get_columns (OID, BOOLEAN, TEXT) IS 'get table 
 DROP FUNCTION  @extschema@.get_columns ("relid" OID, "has_generated_column" BOOLEAN, "rel" TEXT);
 
 /*
+=================== INSERT_OR_UPDATE_USING_RECORDS ===================
+*/
+CREATE FUNCTION insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
+    RETURNS JSONB
+AS $$
+DECLARE
+    "result"              JSONB NOT NULL = '{}';
+    -- pk - primary key
+    -- sk - secondary key
+    "pk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("table");
+    "pk_values"           TEXT[];
+    "sk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("table", FALSE) OPERATOR ( dictionaries.- ) "pk_columns";
+    "sk_values"           TEXT[];
+    --helpers
+    "column"              TEXT;
+BEGIN
+    -- set primary key
+    FOREACH "column" IN ARRAY "pk_columns" LOOP
+            "pk_values" = array_append("pk_values", format('$1.%I', "column"));
+        END LOOP;
+    -- set secondary key
+    FOREACH "column" IN ARRAY "sk_columns" LOOP
+            "sk_values" = array_append("sk_values", format('$1.%I', "column"));
+        END LOOP;
+
+    EXECUTE format('
+        INSERT INTO %1s (%2s) VALUES (%3s)
+            ON CONFLICT ON CONSTRAINT %4I
+            DO UPDATE SET (%5s)=ROW(%6s)
+            RETURNING to_json(%7s.*);',
+                   "table", array_to_string("pk_columns" || "sk_columns"), array_to_string("pk_values" || "sk_values"),
+                   "pk_name",
+                   array_to_string("sk_columns"), array_to_string("sk_values"),
+                   "table")
+        INTO "result" USING "new";
+
+    RETURN "result";
+END
+$$
+    LANGUAGE plpgsql
+    VOLATILE
+    SECURITY DEFINER
+    RETURNS NULL ON NULL INPUT;
+
+/*
+=================== INSERT_OR_UPDATE_USING_ARRAYS ===================
+*/
+DROP FUNCTION insert_or_update_using_arrays ("table" REGCLASS, "columns" TEXT[], "values" TEXT[], "ch_columns" TEXT[], "ch_values" TEXT[], "new" RECORD);
+
+/*
+=================== INSERT_USING_RECORDS ===================
+*/
+CREATE FUNCTION insert_using_records ("table" REGCLASS, "new" RECORD)
+    RETURNS JSONB
+AS $$
+DECLARE
+    -- pk  - primary key
+    -- sk  - secondary key
+    -- main
+    "result"              JSONB NOT NULL  = '{}';
+    "record"              JSONB NOT NULL  = row_to_json(NEW);
+    -- table
+    "pk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("table");
+    "pk_values"           TEXT[];
+    "sk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("table", FALSE) OPERATOR ( @extschema@.- ) "pk_columns";
+    "sk_values"           TEXT[];
+    -- helpers
+    "column"              TEXT;
+BEGIN
+    -- get primary key value for table
+    FOREACH "column" IN ARRAY "pk_columns" LOOP
+            -- all columns in primary key is not NULL, DEFAULT for sequence
+            IF NOT ("record" ? "column") OR ("record" ->> "column" IS NULL) THEN
+                "pk_values" = array_append("pk_values", 'DEFAULT');
+            ELSE
+                "pk_values" = array_append("pk_values", format('$1.%I', "column"));
+            END IF;
+        END LOOP;
+    -- get other column values table
+    FOREACH "column" IN ARRAY "sk_columns" LOOP
+            "sk_values" = array_append("sk_values", format('$1.%I', "column"));
+        END LOOP;
+    -- insert and return record from table
+    EXECUTE format(
+            'INSERT INTO %1s (%2s) VALUES (%3s) RETURNING to_jsonb(%4s.*);',
+            "table",
+            array_to_string("pk_columns" || "sk_columns", ','),
+            array_to_string("pk_values"  || "sk_values", ','),
+            "table"
+            )
+        INTO "result" USING "new";
+
+    RETURN "result";
+END
+$$
+    LANGUAGE plpgsql
+    VOLATILE
+    SECURITY DEFINER
+    RETURNS NULL ON NULL INPUT;
+
+/*
+=================== INSERT_USING_ARRAYS ===================
+*/
+DROP FUNCTION insert_using_arrays ("table" REGCLASS, "columns" TEXT[],  "values" TEXT[], "new" RECORD);
+
+/*
 =================== UPDATE_USING_RECORDS ===================
 */
 CREATE OR REPLACE FUNCTION @extschema@.update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)

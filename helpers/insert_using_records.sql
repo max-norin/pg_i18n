@@ -28,15 +28,23 @@ BEGIN
     FOREACH "column" IN ARRAY "sk_columns" LOOP
         "sk_values" = array_append("sk_values", format('$1.%I', "column"));
     END LOOP;
+
     -- insert and return record from table
-    "result" = @extschema@.insert_using_arrays("table", "pk_columns" || "sk_columns", "pk_values"  || "sk_values", NEW);
+    EXECUTE format(
+                'INSERT INTO %1s (%2s) VALUES (%3s) RETURNING to_jsonb(%4s.*);',
+                "table",
+                array_to_string("pk_columns" || "sk_columns", ','),
+                array_to_string("pk_values"  || "sk_values", ','),
+                "table"
+            )
+        INTO "result" USING "new";
 
     RETURN "result";
 END
 $$
 LANGUAGE plpgsql
-VOLATILE
-SECURITY DEFINER
+VOLATILE -- может делать всё, что угодно, в том числе, модифицировать базу данных
+SECURITY DEFINER -- функция выполняется с правами пользователя, владеющего ей
 RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 COMMENT ON FUNCTION insert_using_records (REGCLASS, RECORD) IS 'insert into table $1 using NEW record';
