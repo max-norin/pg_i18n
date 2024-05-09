@@ -6,31 +6,6 @@ COMMENT ON FUNCTION @extschema@.array_intersect (ANYARRAY, ANYARRAY) IS '$1 INTE
 COMMENT ON OPERATOR @extschema@.& (ANYARRAY, ANYARRAY) IS '$1 INTERSECT $2';
 
 /*
-=================== GET_COLUMNS ===================
-*/
-CREATE FUNCTION  @extschema@.get_columns ("relid" OID, "has_generated_column" BOOLEAN = TRUE)
-    RETURNS TEXT[]
-AS $$
-BEGIN
-    -- https://postgresql.org/docs/current/catalog-pg-attribute.html
-    RETURN (
-        SELECT array_agg(a."attname")
-        FROM "pg_attribute" AS a
-        WHERE "attrelid" = "relid"
-          AND a."attnum" > 0
-          AND ("has_generated_column" OR a.attgenerated = '')
-          AND NOT a.attisdropped);
-END
-$$
-    LANGUAGE plpgsql
-    STABLE
-    RETURNS NULL ON NULL INPUT;
-
-COMMENT ON FUNCTION  @extschema@.get_columns (OID, BOOLEAN, TEXT) IS 'get table columns';
-
-DROP FUNCTION  @extschema@.get_columns ("relid" OID, "has_generated_column" BOOLEAN, "rel" TEXT);
-
-/*
 =================== INSERT_OR_UPDATE_USING_RECORDS ===================
 */
 CREATE OR REPLACE FUNCTION @extschema@.insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
