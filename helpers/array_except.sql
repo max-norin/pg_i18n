@@ -1,3 +1,4 @@
+-- функция вычитания значений массива b из массива a
 CREATE FUNCTION array_except ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
     AS $$
