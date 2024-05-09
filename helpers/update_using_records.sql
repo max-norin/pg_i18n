@@ -40,7 +40,15 @@ BEGIN
 
         -- в USING формируют значения, которые будут вставлены в команду. Для этого используются символы $1 $2
         -- https://postgrespro.ru/docs/postgrespro/current/plpgsql-statements
-        EXECUTE format('UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s) RETURNING to_json(%6s.*);', "table", "ch_columns", "ch_values", "pk_columns", "pk_values", "table")
+        EXECUTE format(
+                    'UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s) RETURNING to_json(%6s.*);',
+                    "table",
+                    array_to_string("ch_columns", ','),
+                    array_to_string("ch_values", ','),
+                    array_to_string("pk_columns", ','),
+                    array_to_string("pk_values", ','),
+                    "table"
+                )
             INTO "result" USING "old", "new";
     END IF;
 

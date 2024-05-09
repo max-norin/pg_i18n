@@ -62,7 +62,15 @@ BEGIN
                 "ch_values" = array_append("ch_values", format('$2.%I', "column"));
             END LOOP;
         -- update and return record from table
-        EXECUTE format('UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s) RETURNING to_json(%6s.*);', "table", "ch_columns", "ch_values", "pk_columns", "pk_values", "table")
+                EXECUTE format(
+                    'UPDATE %1s SET (%2s)=ROW(%3s) WHERE (%4s)=(%5s) RETURNING to_json(%6s.*);',
+                    "table",
+                    array_to_string("ch_columns", ','),
+                    array_to_string("ch_values", ','),
+                    array_to_string("pk_columns", ','),
+                    array_to_string("pk_values", ','),
+                    "table"
+                )
             INTO "result" USING "old", "new";
     END IF;
 
