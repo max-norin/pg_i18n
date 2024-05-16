@@ -1,6 +1,6 @@
 -- создание представления для словарного способа
 -- представление не только отображает данные, но даёт возможность редактирования
-CREATE PROCEDURE @extschema@.create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL)
+CREATE PROCEDURE @extschema@.create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL, "default_trigger" BOOLEAN = FALSE)
     AS $$
 DECLARE
     -- имя будущей таблицы
@@ -56,16 +56,19 @@ BEGIN
             LEFT JOIN %4s bt USING ("lang", %5s)
             WHERE %6s;
     ', "name", array_to_string("select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
-    -- создание trigger для редактиварония представления
-    -- использует %L так как тут необходимо передавать текстовые значения
-    -- %L - равнозначно вызову quote_nullable. Переводит данное значение в текстовый вид и заключает в апострофы
-    -- https://postgrespro.ru/docs/postgrespro/current/functions-string#FUNCTIONS-STRING-FORMAT
-    EXECUTE format('
-        CREATE TRIGGER "update"
-            INSTEAD OF UPDATE
-            ON %1s FOR EACH ROW
-        EXECUTE FUNCTION @extschema@.trigger_update_dictionary_view(%2L, %3L);
-    ', "name", "lb_table", "lbt_table");
+
+    IF "default_trigger" IS NULL THEN
+        -- создание trigger для редактиварония представления
+        -- использует %L так как тут необходимо передавать текстовые значения
+        -- %L - равнозначно вызову quote_nullable. Переводит данное значение в текстовый вид и заключает в апострофы
+        -- https://postgrespro.ru/docs/postgrespro/current/functions-string#FUNCTIONS-STRING-FORMAT
+        EXECUTE format('
+            CREATE TRIGGER "update"
+                INSTEAD OF UPDATE
+                ON %1s FOR EACH ROW
+            EXECUTE FUNCTION @extschema@.trigger_update_dictionary_view(%2L, %3L);
+        ', "name", "lb_table", "lbt_table");
+    END IF;
 END
 $$
 LANGUAGE plpgsql;
