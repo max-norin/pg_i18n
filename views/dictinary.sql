@@ -1,13 +1,13 @@
 -- создание представления для словарного способа
 -- представление не только отображает данные, но даёт возможность редактирования
-CREATE PROCEDURE @extschema@.create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL, "default_trigger" BOOLEAN = FALSE)
+CREATE PROCEDURE public.create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL, "default_trigger" BOOLEAN = FALSE)
     AS $$
 DECLARE
     -- имя будущей таблицы
-    "name"        CONSTANT TEXT   NOT NULL = COALESCE(@extschema@.format_table_name("name"), @extschema@.format_table_name("lb_table"::TEXT, 'v_'));
-    "pk_columns"  CONSTANT TEXT[] = @extschema@.get_primary_key("lb_table");
-    "lb_columns"  CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("lb_table");
-    "lbt_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("lbt_table");
+    "name"        CONSTANT TEXT   NOT NULL = COALESCE(public.format_table_name("name"), public.format_table_name("lb_table"::TEXT, 'v_'));
+    "pk_columns"  CONSTANT TEXT[] = public.get_primary_key("lb_table");
+    "lb_columns"  CONSTANT TEXT[] NOT NULL = public.get_columns("lb_table");
+    "lbt_columns" CONSTANT TEXT[] NOT NULL = public.get_columns("lbt_table");
     "lb_column"               TEXT;
 BEGIN
     -- проверка, что таблицы заданы
@@ -52,7 +52,7 @@ BEGIN
         CREATE VIEW %1s AS
         SELECT %2s
             FROM %3s b
-            CROSS JOIN @extschema@."langs"
+            CROSS JOIN public."langs"
             LEFT JOIN %4s bt USING ("lang", %5s)
             WHERE %6s;
     ', "name", array_to_string("select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
@@ -66,7 +66,7 @@ BEGIN
             CREATE TRIGGER "update"
                 INSTEAD OF UPDATE
                 ON %1s FOR EACH ROW
-            EXECUTE FUNCTION @extschema@.trigger_update_dictionary_view(%2L, %3L);
+            EXECUTE FUNCTION public.trigger_update_dictionary_view(%2L, %3L);
         ', "name", "lb_table", "lbt_table");
     END IF;
 END

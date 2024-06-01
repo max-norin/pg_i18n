@@ -14,7 +14,7 @@ DECLARE
     "record"             JSONB    NOT NULL ='{}';
 BEGIN
     -- insert and return record from lb_table
-    "lb_record" = @extschema@.insert_using_records("lb_table", NEW);
+    "lb_record" = public.insert_using_records("lb_table", NEW);
     -- join query result with target table record
     -- for the correctness of data types and adding the necessary data to lbt_table
     -- Используется, чтобы данные были корректные для lbt_table,
@@ -25,11 +25,11 @@ BEGIN
     NEW = jsonb_populate_record(NEW, "lb_record");
 
     -- insert and return record from lbt_table
-    PERFORM @extschema@.insert_using_records("lbt_table", NEW);
+    PERFORM public.insert_using_records("lbt_table", NEW);
 
     -- change result new, empty object + pk object
     -- изменяется результат триггера, пустой объект текущего представления + primary key
-    "record" = @extschema@.jsonb_empty_by_table(TG_RELID) || @extschema@.jsonb_pk_table_object("lb_table", to_jsonb(NEW));
+    "record" = public.jsonb_empty_by_table(TG_RELID) || public.jsonb_pk_table_object("lb_table", to_jsonb(NEW));
     NEW = jsonb_populate_record(NEW, "record");
 
     -- returning record with primary keys only

@@ -1,12 +1,12 @@
 -- создание представления для пользовательского способа
 -- представление не только отображает данные, но даёт возможность редактирования
-CREATE PROCEDURE @extschema@.create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{*}', "where" TEXT = NULL, "default_trigger" BOOLEAN = FALSE)
+CREATE PROCEDURE public.create_user_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{*}', "where" TEXT = NULL, "default_trigger" BOOLEAN = FALSE)
     AS $$
 DECLARE
     -- имя будущей таблицы
-    "name"       CONSTANT TEXT NOT NULL   = COALESCE(@extschema@.format_table_name("name"), @extschema@.format_table_name("lb_table"::TEXT, 'v_'));
-    "columns"    CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("lb_table");
-    "pk_columns" CONSTANT TEXT[]          = @extschema@.get_primary_key("lb_table");
+    "name"       CONSTANT TEXT NOT NULL   = COALESCE(public.format_table_name("name"), public.format_table_name("lb_table"::TEXT, 'v_'));
+    "columns"    CONSTANT TEXT[] NOT NULL = public.get_columns("lb_table");
+    "pk_columns" CONSTANT TEXT[]          = public.get_primary_key("lb_table");
 BEGIN
     -- проверка, что таблицы заданы
     IF ("lb_table" IS NULL) OR ("lbt_table" IS NULL) THEN
@@ -47,13 +47,13 @@ BEGIN
             CREATE TRIGGER "insert"
                 INSTEAD OF INSERT
                 ON %1s FOR EACH ROW
-            EXECUTE FUNCTION @extschema@.trigger_insert_user_view(%2L, %3L);
+            EXECUTE FUNCTION public.trigger_insert_user_view(%2L, %3L);
         ', "name", "lb_table", "lbt_table");
         EXECUTE format('
             CREATE TRIGGER "update"
                 INSTEAD OF UPDATE
                 ON %1s FOR EACH ROW
-            EXECUTE FUNCTION @extschema@.trigger_update_user_view(%2L, %3L);
+            EXECUTE FUNCTION public.trigger_update_user_view(%2L, %3L);
         ', "name", "lb_table", "lbt_table");
     END IF;
 END

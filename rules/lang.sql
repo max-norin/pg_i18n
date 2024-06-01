@@ -1,4 +1,4 @@
-CREATE FUNCTION @extschema@.lang_rule ("value" TEXT)
+CREATE FUNCTION public.lang_rule ("value" TEXT)
     RETURNS BOOLEAN
     AS $$
 DECLARE
@@ -11,14 +11,14 @@ BEGIN
     IF ("length" IS NULL OR "length" > 3) THEN
         RETURN FALSE;
     END IF;
-    RETURN ("has_language" AND @extschema@.language_rule("arr"[1])) AND
-           (NOT ("has_script") OR (@extschema@.script_rule("arr"[2]) OR (@extschema@.region_rule("arr"[2]) AND NOT "has_region"))) AND
-           (NOT ("has_region") OR @extschema@.region_rule("arr"[3]));
+    RETURN ("has_language" AND public.language_rule("arr"[1])) AND
+           (NOT ("has_script") OR (public.script_rule("arr"[2]) OR (public.region_rule("arr"[2]) AND NOT "has_region"))) AND
+           (NOT ("has_region") OR public.region_rule("arr"[3]));
 END
 $$
 LANGUAGE plpgsql
 IMMUTABLE -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов
 RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
-COMMENT ON FUNCTION @extschema@.lang_rule (TEXT) IS 'RFC 5646';
+COMMENT ON FUNCTION public.lang_rule (TEXT) IS 'RFC 5646';
 

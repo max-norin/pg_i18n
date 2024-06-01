@@ -1,5 +1,5 @@
 -- возвращает имя таблицы в корректном формате с prefix
-CREATE FUNCTION @extschema@.format_table_name ("name" TEXT, "prefix" TEXT = '')
+CREATE FUNCTION public.format_table_name ("name" TEXT, "prefix" TEXT = '')
     RETURNS TEXT
     AS $$
 DECLARE

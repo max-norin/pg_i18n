@@ -1,5 +1,5 @@
 -- обновление значения old в таблице table на new используя колонки ch_columns
-CREATE FUNCTION @extschema@.update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
+CREATE FUNCTION public.update_using_records ("table" REGCLASS, "ch_columns" TEXT[], "old" RECORD, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
@@ -8,15 +8,15 @@ DECLARE
     -- main
     "result"                     JSONB  NOT NULL = '{}';
     -- table
-    "columns"           CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("table", FALSE);
+    "columns"           CONSTANT TEXT[] NOT NULL = public.get_columns("table", FALSE);
     -- primary keys
     -- колонки и значения primary key
-    "pk_columns"        CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("table");
+    "pk_columns"        CONSTANT TEXT[] NOT NULL = public.get_primary_key("table");
     "pk_values"                  TEXT[];
     -- changed values
     -- колонки и значения changed key
     -- получения объединения columns и ch_columns, чтобы наверняка использовать колонки таблицы table
-    "ch_columns"        CONSTANT TEXT[] NOT NULL = "columns" OPERATOR ( @extschema@.& ) "ch_columns";
+    "ch_columns"        CONSTANT TEXT[] NOT NULL = "columns" OPERATOR ( public.& ) "ch_columns";
     "ch_values"                  TEXT[];
     -- helpers
     "column"                     TEXT;
@@ -60,4 +60,4 @@ VOLATILE -- может делать всё, что угодно, в том чи�
 SECURITY DEFINER  -- функция выполняется с правами пользователя, владеющего ей
 RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
-COMMENT ON FUNCTION @extschema@.update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';
+COMMENT ON FUNCTION public.update_using_records (REGCLASS, TEXT[], RECORD, RECORD) IS 'update table $1 using change columns $2 and OLD NEW records';

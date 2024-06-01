@@ -1,5 +1,5 @@
 -- функция вычитания значений массива b из массива a
-CREATE FUNCTION @extschema@.array_except ("a" ANYARRAY, "b" ANYARRAY)
+CREATE FUNCTION public.array_except ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
     AS $$
 DECLARE
@@ -20,11 +20,11 @@ $$
 LANGUAGE plpgsql
 IMMUTABLE; -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов
 
-COMMENT ON FUNCTION @extschema@.array_except (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
+COMMENT ON FUNCTION public.array_except (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
 
-CREATE OPERATOR @extschema@.- (
-    LEFTARG = ANYARRAY, RIGHTARG = ANYARRAY, FUNCTION = @extschema@.array_except
+CREATE OPERATOR public.- (
+    LEFTARG = ANYARRAY, RIGHTARG = ANYARRAY, FUNCTION = public.array_except
 );
 
-COMMENT ON OPERATOR @extschema@.- (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
+COMMENT ON OPERATOR public.- (ANYARRAY, ANYARRAY) IS '$1 EXCEPT $2';
 

@@ -1,5 +1,5 @@
-CREATE DOMAIN @extschema@.LANGUAGE AS VARCHAR(3)
-CHECK (@extschema@.language_rule (VALUE));
+CREATE DOMAIN public.LANGUAGE AS VARCHAR(3)
+CHECK (public.language_rule (VALUE));
 
-COMMENT ON DOMAIN @extschema@.LANGUAGE IS 'ISO 639';
+COMMENT ON DOMAIN public.LANGUAGE IS 'ISO 639';
 

@@ -1,5 +1,5 @@
-CREATE DOMAIN @extschema@.LANG AS VARCHAR(11)
-CHECK (@extschema@.lang_rule (VALUE));
+CREATE DOMAIN public.LANG AS VARCHAR(11)
+CHECK (public.lang_rule (VALUE));
 
-COMMENT ON DOMAIN @extschema@.LANG IS 'RFC 5646';
+COMMENT ON DOMAIN public.LANG IS 'RFC 5646';
 

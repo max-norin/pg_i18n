@@ -1,5 +1,5 @@
 -- функция возвращает пересечение массивов a и b
-CREATE FUNCTION @extschema@.array_intersect ("a" ANYARRAY, "b" ANYARRAY)
+CREATE FUNCTION public.array_intersect ("a" ANYARRAY, "b" ANYARRAY)
     RETURNS ANYARRAY
     AS $$
 BEGIN
@@ -9,11 +9,11 @@ $$
 LANGUAGE plpgsql
 IMMUTABLE; -- функция не может модифицировать базу данных и всегда возвращает один и тот же результат при определённых значениях аргументов
 
-COMMENT ON FUNCTION @extschema@.array_intersect (ANYARRAY, ANYARRAY) IS '$1 INTERSECT $2';
+COMMENT ON FUNCTION public.array_intersect (ANYARRAY, ANYARRAY) IS '$1 INTERSECT $2';
 
-CREATE OPERATOR @extschema@.& (
-    LEFTARG = ANYARRAY, RIGHTARG = ANYARRAY, FUNCTION = @extschema@.array_intersect
+CREATE OPERATOR public.& (
+    LEFTARG = ANYARRAY, RIGHTARG = ANYARRAY, FUNCTION = public.array_intersect
 );
 
-COMMENT ON OPERATOR @extschema@.& (ANYARRAY, ANYARRAY) IS '$1 INTERSECT $2';
+COMMENT ON OPERATOR public.& (ANYARRAY, ANYARRAY) IS '$1 INTERSECT $2';
 

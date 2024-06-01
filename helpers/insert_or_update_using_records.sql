@@ -1,17 +1,17 @@
-CREATE FUNCTION @extschema@.insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
+CREATE FUNCTION public.insert_or_update_using_records ("table" REGCLASS, "new" RECORD)
     RETURNS JSONB
     AS $$
 DECLARE
     "result"              JSONB NOT NULL = '{}';
     -- pk - primary key
     -- sk - secondary key
-    "pk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_primary_key("table");
+    "pk_columns" CONSTANT TEXT[] NOT NULL = public.get_primary_key("table");
     "pk_values"           TEXT[];
-    "sk_columns" CONSTANT TEXT[] NOT NULL = @extschema@.get_columns("table", FALSE) OPERATOR ( dictionaries.- ) "pk_columns";
+    "sk_columns" CONSTANT TEXT[] NOT NULL = public.get_columns("table", FALSE) OPERATOR ( dictionaries.- ) "pk_columns";
     "sk_values"           TEXT[];
     --helpers
     "column"              TEXT;
-    "pk_name"    CONSTANT TEXT  NOT NULL = @extschema@.get_primary_key_name("table");
+    "pk_name"    CONSTANT TEXT  NOT NULL = public.get_primary_key_name("table");
 BEGIN
     -- set primary key
     FOREACH "column" IN ARRAY "pk_columns" LOOP
@@ -41,4 +41,4 @@ $$
     SECURITY DEFINER -- функция выполняется с правами пользователя, владеющего ей
     RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
-COMMENT ON FUNCTION @extschema@.insert_or_update_using_records (REGCLASS, RECORD) IS 'insert or update table using NEW record';
+COMMENT ON FUNCTION public.insert_or_update_using_records (REGCLASS, RECORD) IS 'insert or update table using NEW record';
