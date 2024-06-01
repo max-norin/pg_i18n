@@ -43,4 +43,4 @@ LANGUAGE plpgsql
 VOLATILE -- может делать всё, что угодно, в том числе, модифицировать базу данных
 SECURITY DEFINER;  -- функция выполняется с правами пользователя, владеющего ей
 
-COMMENT ON FUNCTION trigger_insert_user_view () IS 'DON''T USE DEFAULT WITH VIEWS';
+COMMENT ON FUNCTION trigger_insert_user_view () IS 'NOTE: DON''T USE DEFAULT WITH VIEWS';
