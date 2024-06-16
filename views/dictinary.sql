@@ -1,51 +1,46 @@
 -- создание представления для словарного способа
 -- представление не только отображает данные, но даёт возможность редактирования
-CREATE PROCEDURE public.create_dictionary_view ("name" TEXT, "lb_table" REGCLASS, "lbt_table" REGCLASS, "select" TEXT[] = '{}', "where" TEXT = NULL, "default_trigger" BOOLEAN = FALSE)
+CREATE PROCEDURE public.create_dictionary_view ("name" TEXT, "baserel" OID, "tranrel" OID)
     AS $$
 DECLARE
     -- имя будущей таблицы
-    "name"        CONSTANT TEXT   NOT NULL = COALESCE(public.format_table_name("name"), public.format_table_name("lb_table"::TEXT, 'v_'));
-    "pk_columns"  CONSTANT TEXT[] = public.get_primary_key("lb_table");
-    "lb_columns"  CONSTANT TEXT[] NOT NULL = public.get_columns("lb_table");
-    "lbt_columns" CONSTANT TEXT[] NOT NULL = public.get_columns("lbt_table");
-    "lb_column"               TEXT;
+    "name"        CONSTANT TEXT   NOT NULL = COALESCE("name", 'v_' || "baserel"::REGCLASS::TEXT);
+    "pk_columns"  CONSTANT TEXT[] = public.get_primary_key("baserel");
+    "b_columns"   CONSTANT TEXT[] NOT NULL = public.get_columns("baserel");
+    "t_columns"   CONSTANT TEXT[] NOT NULL = public.get_columns("tranrel");
+    "column"               TEXT;
+    "select"               TEXT[] = '{}';
 BEGIN
     -- проверка, что таблицы заданы
-    IF ("lb_table" IS NULL) OR ("lbt_table" IS NULL) THEN
-        RAISE EXCEPTION USING MESSAGE = '"lb_table" and "lbt_table" cannot be NULL';
+    IF ("baserel" IS NULL) OR ("tranrel" IS NULL) THEN
+        RAISE EXCEPTION USING MESSAGE = '"baserel" and "tranrel" cannot be NULL';
     END IF;
     -- проверка, что pk_columns существуют
     IF ("pk_columns" IS NULL) THEN
-        RAISE EXCEPTION USING MESSAGE = '"lb_table" table must have primary keys';
+        RAISE EXCEPTION USING MESSAGE = '"baserel" table must have primary keys';
     END IF;
 
-    -- set select
-    -- b - base table (lb_table) сокращенное именование таблицы в запросе
-    -- bt - base_tran table (lbt_table) сокращенное именование таблицы в запросе
-    IF array_length("select", 1) IS NULL THEN
-        -- если в таблице bt нет записей, то это строка взята из таблицы по умолчанию - свойство is_default
-        "select" = array_append("select", '(bt.*) IS NULL AS "is_default"');
-        -- свойство язык из таблицы langs, используется из CROSS JOIN "langs"
-        "select" = array_append("select", '"langs"."lang"');
-        FOREACH "lb_column" IN ARRAY "lb_columns" LOOP
-            -- если колонка lb_column есть в таблице lbt_table,
-            -- то тогда использовать особую вставку с использованием COALESCE
-            IF "lb_column" = ANY ("lbt_columns") THEN
-                "select" = array_append("select", format('COALESCE(bt.%1$I, b.%1$I) AS %1$I', "lb_column"));
-            ELSE
-                "select" = array_append("select", format('b.%1$I', "lb_column"));
-            END IF;
-        END LOOP;
-    END IF;
+    -- далее b - базовая таблица, t - таблица переводов
 
-    -- set where
-    IF "where" IS NULL THEN
-        "where" = 'TRUE';
-    END IF;
+    -- установка select
+    -- если в таблице переводов нет записей, то это строка взята из таблицы по умолчанию - свойство is_default
+    "select" = array_append("select", '(t.*) IS NULL AS "is_default"');
+    -- свойство язык из таблицы langs, используется из слияния CROSS JOIN "langs"
+    "select" = array_append("select", '"langs"."lang"');
+    FOREACH "column" IN ARRAY "b_columns" LOOP
+        -- если колонка column есть среди колонок в таблице tranrel,
+        -- то тогда использовать особую вставку с использованием COALESCE
+        IF "column" = ANY ("t_columns") THEN
+            "select" = array_append("select", format('COALESCE(t.%1$I, b.%1$I) AS %1$I', "column"));
+        ELSE
+            "select" = array_append("select", format('b.%1$I', "column"));
+        END IF;
+    END LOOP;
 
     -- create view
     -- CROSS JOIN "langs", чтобы в представлении были указанны все языки из таблицы "langs"
-    -- USING — это сокращённая запись условия, полезная в ситуации, когда с обеих сторон соединения столбцы имеют одинаковые имена
+    -- USING — это сокращённая запись условия, полезная в ситуации,
+    -- когда с обеих сторон соединения столбцы имеют одинаковые имена
     -- %s - вставляется как простая строка
     -- https://postgrespro.ru/docs/postgrespro/current/functions-string#FUNCTIONS-STRING-FORMAT
     EXECUTE format('
@@ -53,22 +48,20 @@ BEGIN
         SELECT %2s
             FROM %3s b
             CROSS JOIN public."langs"
-            LEFT JOIN %4s bt USING ("lang", %5s)
-            WHERE %6s;
-    ', "name", array_to_string("select", ','), "lb_table", "lbt_table", array_to_string("pk_columns", ','), "where");
+            LEFT JOIN %4s t USING ("lang", %5s)
+            WHERE TRUE;
+    ', "name", array_to_string("select", ','), "baserel"::REGCLASS, "tranrel"::REGCLASS, array_to_string("pk_columns", ','));
 
-    IF "default_trigger" IS NULL THEN
-        -- создание trigger для редактиварония представления
-        -- использует %L так как тут необходимо передавать текстовые значения
-        -- %L - равнозначно вызову quote_nullable. Переводит данное значение в текстовый вид и заключает в апострофы
-        -- https://postgrespro.ru/docs/postgrespro/current/functions-string#FUNCTIONS-STRING-FORMAT
-        EXECUTE format('
-            CREATE TRIGGER "update"
-                INSTEAD OF UPDATE
-                ON %1s FOR EACH ROW
-            EXECUTE FUNCTION public.trigger_update_dictionary_view(%2L, %3L);
-        ', "name", "lb_table", "lbt_table");
-    END IF;
+    -- создание trigger для редактиварония представления
+    -- использует %L так как тут необходимо передавать текстовые значения
+    -- %L - равнозначно вызову quote_nullable. Переводит данное значение в текстовый вид и заключает в апострофы
+    -- https://postgrespro.ru/docs/postgrespro/current/functions-string#FUNCTIONS-STRING-FORMAT
+    -- EXECUTE format('
+    --     CREATE TRIGGER "update"
+    --         INSTEAD OF UPDATE
+    --         ON %1s FOR EACH ROW
+    --     EXECUTE FUNCTION public.trigger_update_dictionary_view(%2L, %3L);
+    -- ', "name", "baserel", "tranrel");
 END
 $$
 LANGUAGE plpgsql;
