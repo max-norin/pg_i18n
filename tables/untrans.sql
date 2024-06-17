@@ -1,7 +1,7 @@
 -- Пользовательский способ - выдаются только переведенные данные.
 CREATE TABLE public."untrans"
 (
-    "default_lang" public.LANG NOT NULL REFERENCES public."langs" ("lang") ON UPDATE CASCADE
+    "default_lang" public.LANG REFERENCES public."langs" ("lang") ON UPDATE CASCADE
 );
 
 CREATE RULE "insert" AS ON INSERT TO public."untrans" DO INSTEAD NOTHING;
