@@ -77,6 +77,28 @@ BEGIN
                      "tranrel"::REGCLASS,
                      array_to_string("pk_join_on", ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
+
+    EXECUTE format('
+            CREATE FUNCTION trigger_update_dictionary_view ()
+                RETURNS TRIGGER
+                AS --
+            DECLARE
+            BEGIN
+
+                RETURN NEW;
+            END
+            --
+            LANGUAGE plpgsql
+            VOLATILE
+            SECURITY DEFINER;
+        ', "name");
+
+    EXECUTE format('
+            CREATE TRIGGER "update"
+                INSTEAD OF UPDATE
+                ON %1s FOR EACH ROW
+            EXECUTE FUNCTION public.trigger_update_dictionary_view();
+        ', "name");
 END
 $$
 LANGUAGE plpgsql;
