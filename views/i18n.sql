@@ -79,7 +79,7 @@ BEGIN
     EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
 
     EXECUTE format('
-            CREATE FUNCTION trigger_update_dictionary_view ()
+            CREATE FUNCTION trigger_i18n_view ()
                 RETURNS TRIGGER
                 AS --
             DECLARE
@@ -97,7 +97,7 @@ BEGIN
             CREATE TRIGGER "update"
                 INSTEAD OF UPDATE
                 ON %1s FOR EACH ROW
-            EXECUTE FUNCTION public.trigger_update_dictionary_view();
+            EXECUTE FUNCTION public.trigger_i18n_view();
         ', "name");
 END
 $$
