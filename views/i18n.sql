@@ -95,7 +95,7 @@ BEGIN
 
     EXECUTE format('
             CREATE TRIGGER "update"
-                INSTEAD OF UPDATE
+                INSTEAD OF INSERT OR UPDATE
                 ON %1I FOR EACH ROW
             EXECUTE FUNCTION public.trigger_i18n_view();
         ', "name");
