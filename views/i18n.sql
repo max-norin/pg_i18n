@@ -11,8 +11,9 @@ DECLARE
     "tran_columns"  CONSTANT TEXT[] = public.get_columns("tranrel");
     -- для создания триггера
     "pk_values"              TEXT[];
-    "sk_columns"             TEXT[];
-    "sk_values"              TEXT[];
+    -- unique, уникальные
+    "un_columns"             TEXT[];
+    "un_values"              TEXT[];
     "base_query"             TEXT;
     "tran_query"             TEXT;
     -- вспомогательные
@@ -86,7 +87,9 @@ BEGIN
                      array_to_string("pk_join_on", ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
 
-    -- создание триггера
+    -- создание триггеров
+
+    -- создание запроса для вставки и обновления базовой таблицы
 
     -- set primary key
     "pk_columns" = public.get_primary_key_columns("baserel");
@@ -95,17 +98,19 @@ BEGIN
         "pk_values" = array_append("pk_values", format('NEW.%I', "column"));
     END LOOP;
     -- set secondary key
-    "sk_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "pk_columns";
-    "sk_values" = NULL;
-    FOREACH "column" IN ARRAY "sk_columns" LOOP
-        "sk_values" = array_append("sk_values", format('NEW.%I', "column"));
+    "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "pk_columns";
+    "un_values" = NULL;
+    FOREACH "column" IN ARRAY "un_columns" LOOP
+        "un_values" = array_append("un_values", format('NEW.%I', "column"));
     END LOOP;
 
     "base_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s) RETURNING * INTO "base_new"',
                          "baserel"::REGCLASS,
-                         array_to_string("pk_columns" || "sk_columns", ','), array_to_string("pk_values" || "sk_values", ','),
+                         array_to_string("pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
                           public.get_primary_key_name("baserel"),
-                         array_to_string("sk_columns", ','), array_to_string("sk_values", ','));
+                         array_to_string("un_columns", ','), array_to_string("un_values", ','));
+
+    -- создание запроса для вставки и обновления таблицы переводов
 
     -- set primary key
     "pk_columns" = public.get_primary_key_columns("tranrel");
@@ -114,17 +119,17 @@ BEGIN
         "pk_values" = array_append("pk_values", format('NEW.%I', "column"));
     END LOOP;
     -- set secondary key
-    "sk_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "pk_columns";
-    "sk_values" = NULL;
-    FOREACH "column" IN ARRAY "sk_columns" LOOP
-        "sk_values" = array_append("sk_values", format('NEW.%I', "column"));
+    "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "pk_columns";
+    "un_values" = NULL;
+    FOREACH "column" IN ARRAY "un_columns" LOOP
+        "un_values" = array_append("un_values", format('NEW.%I', "column"));
     END LOOP;
 
     "tran_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s) RETURNING * INTO "tran_new"',
                           "tranrel"::REGCLASS,
-                          array_to_string("pk_columns" || "sk_columns", ','), array_to_string("pk_values" || "sk_values", ','),
+                          array_to_string("pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
                           public.get_primary_key_name("tranrel"),
-                          array_to_string("sk_columns", ','), array_to_string("sk_values", ','));
+                          array_to_string("un_columns", ','), array_to_string("un_values", ','));
 
     -- IF TG_OP = 'INSERT' THEN %1s ELSE %2s END IF;
     -- RAISE NOTICE USING MESSAGE =
