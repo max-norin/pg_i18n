@@ -93,16 +93,10 @@ BEGIN
 
     -- set primary key
     "pk_columns" = public.get_primary_key_columns("baserel");
-    "pk_values" = NULL;
-    FOREACH "column" IN ARRAY "pk_columns" LOOP
-        "pk_values" = array_append("pk_values", format('NEW.%I', "column"));
-    END LOOP;
+    "pk_values" = public.array_format("pk_columns", 'NEW.%I');
     -- set secondary key
     "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "pk_columns";
-    "un_values" = NULL;
-    FOREACH "column" IN ARRAY "un_columns" LOOP
-        "un_values" = array_append("un_values", format('NEW.%I', "column"));
-    END LOOP;
+    "un_values" = public.array_format("un_columns", 'NEW.%I');
 
     "base_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s) RETURNING * INTO "base_new"',
                          "baserel"::REGCLASS,
@@ -114,16 +108,10 @@ BEGIN
 
     -- set primary key
     "pk_columns" = public.get_primary_key_columns("tranrel");
-    "pk_values" = NULL;
-    FOREACH "column" IN ARRAY "pk_columns" LOOP
-        "pk_values" = array_append("pk_values", format('NEW.%I', "column"));
-    END LOOP;
+    "pk_values" = public.array_format("pk_columns", 'NEW.%I');
     -- set secondary key
     "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "pk_columns";
-    "un_values" = NULL;
-    FOREACH "column" IN ARRAY "un_columns" LOOP
-        "un_values" = array_append("un_values", format('NEW.%I', "column"));
-    END LOOP;
+    "un_values" = public.array_format("un_columns", 'NEW.%I');
 
     "tran_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s) RETURNING * INTO "tran_new"',
                           "tranrel"::REGCLASS,
