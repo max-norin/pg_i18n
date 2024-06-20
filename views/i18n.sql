@@ -4,27 +4,27 @@ CREATE OR REPLACE PROCEDURE public.create_i18n_view ("baserel" OID, "tranrel" OI
     AS $$
 DECLARE
     -- для создания представлений
-    "base_pk_columns" CONSTANT TEXT[] = public.get_primary_key_columns("baserel");
-    "base_columns"  CONSTANT TEXT[] = public.get_columns("baserel");
-    "tran_pk_columns" CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
-    "tran_columns"  CONSTANT TEXT[] = public.get_columns("tranrel");
+    "base_pk_columns"  CONSTANT TEXT[] = public.get_primary_key_columns("baserel");
+    "base_columns"     CONSTANT TEXT[] = public.get_columns("baserel");
+    "tran_pk_columns"  CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
+    "tran_columns"     CONSTANT TEXT[] = public.get_columns("tranrel");
     -- для создания триггера
-    "pk_values"              TEXT[];
+    "pk_values"                 TEXT[];
     -- same name, одноименные
-    "sn_columns"    CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
-    "sn_values"     CONSTANT TEXT[] = public.array_format("sn_columns", 'NEW.%I');
+    "sn_columns"       CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
+    "sn_values"        CONSTANT TEXT[] = public.array_format("sn_columns", 'NEW.%I');
     -- unique, уникальные
-    "un_columns"             TEXT[];
-    "un_values"              TEXT[];
-    "base_insert_query"      TEXT;
-    "base_default_insert_query"      TEXT;
-    "base_update_query"      TEXT;
-    "tran_query"             TEXT;
+    "un_columns"                TEXT[];
+    "un_values"                 TEXT[];
+    "base_insert_query"         TEXT;
+    "base_default_insert_query" TEXT;
+    "base_update_query"         TEXT;
+    "tran_query"                TEXT;
     -- вспомогательные
-    "column"                 TEXT;
-    "name"                   TEXT;
-    "select"                 TEXT[] = '{}';
-    "query"                  TEXT = '';
+    "column"                    TEXT;
+    "name"                      TEXT;
+    "select"                    TEXT[] = '{}';
+    "query"                     TEXT = '';
 BEGIN
     -- проверка, что pk_columns существуют
     IF ("base_pk_columns" IS NULL) THEN
