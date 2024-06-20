@@ -63,16 +63,13 @@ BEGIN
     -- установка имени представления
     "name" = 'v_dictionary';
 
-    -- установка select
-    -- повторяет то, что выше
+    -- установка select, повторяет то, что выше
     "select" = public.array_format("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
     "select" = "select" || public.array_format("tran_columns" OPERATOR ( public.- ) "tran_pk_columns", 'CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I');
-    -- колонка - lang из таблицы langs, используется из объединения CROSS JOIN "langs"
-    "select" = array_prepend('l."lang"', "select");
-    -- колонка - запись с дефолтным языком
-    "select" = array_prepend('(b."default_lang" = l."lang") IS TRUE AS "is_default_lang"', "select");
-    -- колонка - является переводом
-    "select" = array_prepend('NOT ((t.*) IS NULL) AS "is_tran"', "select");
+    -- lang - lang из таблицы langs, используется из объединения CROSS JOIN "langs"
+    -- default_lang - запись с дефолтным языком
+    -- is_tran - является переводом
+    "select" = ARRAY['NOT ((t.*) IS NULL) AS "is_tran"', '(b."default_lang" = l."lang") IS TRUE AS "is_default_lang"', 'l."lang"'] || "select";
 
     -- создание представления с записями по всем языкам
     -- %s - вставляется как простая строка
