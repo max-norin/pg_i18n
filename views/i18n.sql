@@ -4,13 +4,14 @@ CREATE OR REPLACE PROCEDURE public.create_i18n_view ("baserel" OID, "tranrel" OI
     AS $$
 DECLARE
     -- для создания представлений
-    "pk_columns"             TEXT[] = public.get_primary_key_columns("baserel");
+    "base_pk_columns" CONSTANT TEXT[] = public.get_primary_key_columns("baserel");
     "base_columns"  CONSTANT TEXT[] = public.get_columns("baserel");
+    "tran_pk_columns" CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
     "tran_columns"  CONSTANT TEXT[] = public.get_columns("tranrel");
     -- для создания триггера
     "pk_values"              TEXT[];
     -- same name, одноименные
-    "sn_columns"    CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "pk_columns";
+    "sn_columns"    CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
     "sn_values"     CONSTANT TEXT[] = public.array_format("sn_columns", 'NEW.%I');
     -- unique, уникальные
     "un_columns"             TEXT[];
@@ -26,7 +27,7 @@ DECLARE
     "query"                  TEXT = '';
 BEGIN
     -- проверка, что pk_columns существуют
-    IF ("pk_columns" IS NULL) THEN
+    IF ("base_pk_columns" IS NULL) THEN
         RAISE EXCEPTION USING MESSAGE = '"baserel" table must have primary keys';
     END IF;
 
@@ -37,9 +38,9 @@ BEGIN
 
     -- установка select
     -- добавление колонок базовой таблицы, включая первичные ключи, но без одноименных колонок таблицы переводов
-    "select" = public.array_format("pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
+    "select" = public.array_format("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
     -- добавление колонок из таблицы переводов
-    FOREACH "column" IN ARRAY ("tran_columns" OPERATOR ( public.- ) '{lang}'::TEXT[]) OPERATOR ( public.- ) "pk_columns" LOOP
+    FOREACH "column" IN ARRAY "tran_columns" OPERATOR ( public.- ) "tran_pk_columns" LOOP
         -- если колонка есть среди колонок таблицы baserel, то использовать особую вставку CASE
         "select" = array_append("select", CASE WHEN "column" = ANY ("base_columns")
             THEN format('CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I', "column")
@@ -54,7 +55,7 @@ BEGIN
                    array_to_string("select", ','),
                    "baserel"::REGCLASS,
                    "tranrel"::REGCLASS,
-                   array_to_string(public.array_format("pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
+                   array_to_string(public.array_format("base_pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
 
     -- далее b - таблица дефолтных значений, t - таблица переводов, l - таблица языков
@@ -64,15 +65,14 @@ BEGIN
 
     -- установка select
     -- повторяет то, что выше
-    "select" = public.array_format("pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
-    "select" = "select" || public.array_format(("tran_columns" OPERATOR ( public.- ) '{lang}'::TEXT[]) OPERATOR ( public.- ) "pk_columns", 'CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I');
+    "select" = public.array_format("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
+    "select" = "select" || public.array_format("tran_columns" OPERATOR ( public.- ) "tran_pk_columns", 'CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I');
     -- колонка - lang из таблицы langs, используется из объединения CROSS JOIN "langs"
     "select" = array_prepend('l."lang"', "select");
     -- колонка - запись с дефолтным языком
     "select" = array_prepend('(b."default_lang" = l."lang") IS TRUE AS "is_default_lang"', "select");
     -- колонка - является переводом
     "select" = array_prepend('NOT ((t.*) IS NULL) AS "is_tran"', "select");
-    -- TODO сделать select из таблицы переводов через CASE
 
     -- создание представления с записями по всем языкам
     -- %s - вставляется как простая строка
@@ -84,7 +84,7 @@ BEGIN
                      "query", -- предыдущий запрос
                      array_to_string("select", ','),
                      "tranrel"::REGCLASS,
-                     array_to_string(public.array_format("pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
+                     array_to_string(public.array_format("base_pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
 
     -- создание триггеров
@@ -92,36 +92,34 @@ BEGIN
     -- создание запроса для вставки и обновления базовой таблицы
 
     -- set primary key
-    "pk_columns" = public.get_primary_key_columns("baserel");
-    "pk_values" = public.array_format("pk_columns", 'NEW.%I');
+    "pk_values" = public.array_format("base_pk_columns", 'NEW.%I');
     -- set secondary key
-    "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "pk_columns" OPERATOR ( public.- ) "sn_columns";
+    "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "base_pk_columns" OPERATOR ( public.- ) "sn_columns";
     "un_values" = public.array_format("un_columns", 'NEW.%I');
 
     "base_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("pk_columns" || "sn_columns" || "un_columns", ','), array_to_string("pk_values" || "sn_values" || "un_values", ','));
+                                 array_to_string("base_pk_columns" || "sn_columns" || "un_columns", ','), array_to_string("pk_values" || "sn_values" || "un_values", ','));
     "base_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("pk_columns" || "sn_columns" || "un_columns", ','), array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("pk_values", 1)]) || "sn_values" || "un_values", ','));
+                                 array_to_string("base_pk_columns" || "sn_columns" || "un_columns", ','), array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("pk_values", 1)]) || "sn_values" || "un_values", ','));
 
     "base_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
-                                 array_to_string("pk_columns", ','), array_to_string(public.array_format("pk_columns", 'OLD.%I'), ','));
+                                 array_to_string("base_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
+                                 array_to_string("base_pk_columns", ','), array_to_string(public.array_format("base_pk_columns", 'OLD.%I'), ','));
 
     -- создание запроса для вставки и обновления таблицы переводов
 
     -- set primary key
-    "pk_columns" = public.get_primary_key_columns("tranrel");
-    "pk_values" = public.array_format("pk_columns", 'NEW.%I');
+    "pk_values" = public.array_format("tran_pk_columns", 'NEW.%I');
     -- set secondary key
-    "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "pk_columns";
+    "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "tran_pk_columns";
     "un_values" = public.array_format("un_columns", 'NEW.%I');
 
     "tran_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s)',
                           "tranrel"::REGCLASS,
-                          array_to_string("pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
+                          array_to_string("tran_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
                           public.get_primary_key_name("tranrel"),
                           array_to_string("un_columns", ','), array_to_string("un_values", ','));
 
@@ -153,7 +151,7 @@ BEGIN
             LANGUAGE plpgsql
             VOLATILE
             SECURITY DEFINER;
-        ',  array_to_string(public.array_format("pk_columns", 'NEW.%1I IS NULL'), ','),
+        ',  array_to_string(public.array_format("base_pk_columns", 'NEW.%1I IS NULL'), ','),
             "base_default_insert_query", "base_insert_query",
             "base_update_query",
             "tran_query");
