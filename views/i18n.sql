@@ -111,15 +111,19 @@ BEGIN
     -- создание запроса для вставки и обновления таблицы переводов
 
     -- set primary key
-    "pk_values" = public.array_format("tran_pk_columns", 'NEW.%I');
+    "pk_values" = public.array_format("base_pk_columns", 'NEW.%I');
     -- set secondary key
-    "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "tran_pk_columns";
+    "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "base_pk_columns" OPERATOR ( public.- ) '{lang}'::TEXT[];
     "un_values" = public.array_format("un_columns", 'NEW.%I');
 
     "tran_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("tran_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','));
+                                 array_to_string("base_pk_columns" || '{lang}'::TEXT[] || "un_columns", ','), array_to_string("pk_values" || '{NEW.lang}'::TEXT[] || "un_values", ','));
+    "tran_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
+                                 "tranrel"::REGCLASS,
+                                 array_to_string("base_pk_columns" || '{lang}'::TEXT[] || "un_columns", ','), array_to_string("pk_values" || '{DEFAULT}'::TEXT[] || "un_values", ','));
 
+    "pk_values" = public.array_format("tran_pk_columns", 'NEW.%I');
     "tran_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("tran_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
@@ -139,8 +143,10 @@ BEGIN
                 ELSE %4s RETURNING * INTO "base_new"; END IF;
                 NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
 
-                IF %5s THEN %6s RETURNING * INTO "tran_new";
-                ELSE %7s RETURNING * INTO "tran_new"; END IF;
+                IF TG_OP = ''INSERT'' THEN
+                    IF NEW.lang IS NULL THEN %6s RETURNING * INTO "tran_new";
+                    ELSE %7s RETURNING * INTO "tran_new"; END IF;
+                ELSE %8s RETURNING * INTO "tran_new"; END IF;
                 NEW = jsonb_populate_record(NEW, to_jsonb("tran_new"));
 
                 NEW.is_tran = TRUE;
@@ -155,8 +161,7 @@ BEGIN
         ',  array_to_string(public.array_format("base_pk_columns", 'NEW.%1I IS NULL'), ' AND '),
             "base_default_insert_query", "base_insert_query",
             "base_update_query",
-            array_to_string(public.array_format("tran_pk_columns", 'OLD.%1I IS NULL'), ' AND '),
-            "tran_insert_query",
+            "tran_default_insert_query", "tran_insert_query",
             "tran_update_query");
 
     EXECUTE format('
