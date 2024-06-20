@@ -1,4 +1,4 @@
-CREATE FUNCTION  public.array_format ("textarray" TEXT[], "formatstr" TEXT, VARIADIC "formatarg" TEXT[])
+CREATE FUNCTION  public.array_format ("textarray" TEXT[], "formatstr" TEXT, VARIADIC "formatarg" TEXT[] = '{}')
     RETURNS TEXT[]
     AS $$
 DECLARE
@@ -6,7 +6,7 @@ DECLARE
     "result"  TEXT[];
 BEGIN
     FOREACH "item" IN ARRAY "textarray" LOOP
-        "result" = array_append("result", format("formatstr", "item", VARIADIC "formatarg"));
+        "result" = array_append("result", format("formatstr", VARIADIC ("item" || "formatarg")));
     END LOOP;
 
     RETURN "result";
