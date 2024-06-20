@@ -11,6 +11,9 @@ DECLARE
     "tran_columns"  CONSTANT TEXT[] = public.get_columns("tranrel");
     -- для создания триггера
     "pk_values"              TEXT[];
+    -- same name, одноименные
+    "sn_columns"    CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "pk_columns";
+    "sn_values"     CONSTANT TEXT[] = public.array_format("sn_columns", 'NEW.%I');
     -- unique, уникальные
     "un_columns"             TEXT[];
     "un_values"              TEXT[];
@@ -95,12 +98,12 @@ BEGIN
     "pk_columns" = public.get_primary_key_columns("baserel");
     "pk_values" = public.array_format("pk_columns", 'NEW.%I');
     -- set secondary key
-    "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "pk_columns";
+    "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "pk_columns" OPERATOR ( public.- ) "sn_columns";
     "un_values" = public.array_format("un_columns", 'NEW.%I');
 
     "base_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s) RETURNING * INTO "base_new"',
                          "baserel"::REGCLASS,
-                         array_to_string("pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
+                         array_to_string("pk_columns" || "sn_columns" || "un_columns", ','), array_to_string("pk_values" || "sn_values" || "un_values", ','),
                           public.get_primary_key_name("baserel"),
                          array_to_string("un_columns", ','), array_to_string("un_values", ','));
 
