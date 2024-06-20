@@ -5,8 +5,6 @@ CREATE OR REPLACE PROCEDURE public.create_i18n_view ("baserel" OID, "tranrel" OI
 DECLARE
     -- для создания представлений
     "pk_columns"             TEXT[] = public.get_primary_key_columns("baserel");
-    -- массив для составления выражения JOIN ON <...> с primary_key, нет возможности использовать USING
-    "pk_join_on"             TEXT[] = '{}';
     "base_columns"  CONSTANT TEXT[] = public.get_columns("baserel");
     "tran_columns"  CONSTANT TEXT[] = public.get_columns("tranrel");
     -- для создания триггера
@@ -18,6 +16,7 @@ DECLARE
     "un_columns"             TEXT[];
     "un_values"              TEXT[];
     "base_insert_query"      TEXT;
+    "base_default_insert_query"      TEXT;
     "base_update_query"      TEXT;
     "tran_query"             TEXT;
     -- вспомогательные
@@ -33,21 +32,14 @@ BEGIN
 
     -- далее b - базовая таблица, t - таблица переводов
 
-    -- установка выражения сравнения для JOIN ON <...>
-    FOREACH "column" IN ARRAY "pk_columns" LOOP
-        "pk_join_on" = array_append("pk_join_on", format('b.%1$I = t.%1$I', "column"));
-    END LOOP;
-
     -- установка имени представления
     "name" = 'v_dictionary_default';
 
     -- установка select
     -- добавление колонок базовой таблицы, включая первичные ключи, но без одноименных колонок таблицы переводов
-    FOREACH "column" IN ARRAY "pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns") LOOP
-        "select" = array_append("select", format('b.%1I', "column"));
-    END LOOP;
+    "select" = public.array_format("pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
     -- добавление колонок из таблицы переводов
-    FOREACH "column" IN ARRAY "tran_columns" OPERATOR ( public.- ) '{lang}'::TEXT[] OPERATOR ( public.- ) "pk_columns" LOOP
+    FOREACH "column" IN ARRAY ("tran_columns" OPERATOR ( public.- ) '{lang}'::TEXT[]) OPERATOR ( public.- ) "pk_columns" LOOP
         -- если колонка есть среди колонок таблицы baserel, то использовать особую вставку CASE
         "select" = array_append("select", CASE WHEN "column" = ANY ("base_columns")
             THEN format('CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I', "column")
@@ -62,7 +54,7 @@ BEGIN
                    array_to_string("select", ','),
                    "baserel"::REGCLASS,
                    "tranrel"::REGCLASS,
-                   array_to_string("pk_join_on", ' AND '));
+                   array_to_string(public.array_format("pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
 
     -- далее b - таблица дефолтных значений, t - таблица переводов, l - таблица языков
@@ -71,6 +63,9 @@ BEGIN
     "name" = 'v_dictionary';
 
     -- установка select
+    -- повторяет то, что выше
+    "select" = public.array_format("pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
+    "select" = "select" || public.array_format(("tran_columns" OPERATOR ( public.- ) '{lang}'::TEXT[]) OPERATOR ( public.- ) "pk_columns", 'CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I');
     -- колонка - lang из таблицы langs, используется из объединения CROSS JOIN "langs"
     "select" = array_prepend('l."lang"', "select");
     -- колонка - запись с дефолтным языком
@@ -89,7 +84,7 @@ BEGIN
                      "query", -- предыдущий запрос
                      array_to_string("select", ','),
                      "tranrel"::REGCLASS,
-                     array_to_string("pk_join_on", ' AND '));
+                     array_to_string(public.array_format("pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
 
     -- создание триггеров
@@ -106,12 +101,14 @@ BEGIN
     "base_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "baserel"::REGCLASS,
                                  array_to_string("pk_columns" || "sn_columns" || "un_columns", ','), array_to_string("pk_values" || "sn_values" || "un_values", ','));
+    "base_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
+                                 "baserel"::REGCLASS,
+                                 array_to_string("pk_columns" || "sn_columns" || "un_columns", ','), array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("pk_values", 1)]) || "sn_values" || "un_values", ','));
 
-    "pk_values" = public.array_format("pk_columns", 'OLD.%I');
     "base_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("un_columns", ','), array_to_string("un_values", ','),
-                                 array_to_string("pk_columns", ','), array_to_string("pk_values", ','));
+                                 array_to_string("pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
+                                 array_to_string("pk_columns", ','), array_to_string(public.array_format("pk_columns", 'OLD.%I'), ','));
 
     -- создание запроса для вставки и обновления таблицы переводов
 
@@ -138,8 +135,17 @@ BEGIN
                 "base_new"  RECORD;
                 "tran_new"  RECORD;
             BEGIN
-                IF TG_OP = ''INSERT'' THEN %1s RETURNING * INTO "base_new"; ELSE %2s RETURNING * INTO "base_new"; END IF;
-                %3s RETURNING * INTO "tran_new";
+                IF TG_OP = ''INSERT'' THEN
+                    IF %1s THEN %2s RETURNING * INTO "base_new";
+                    ELSE %3s RETURNING * INTO "base_new"; END IF;
+                ELSE %4s RETURNING * INTO "base_new"; END IF;
+                NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
+
+                %5s RETURNING * INTO "tran_new";
+                NEW = jsonb_populate_record(NEW, to_jsonb("tran_new"));
+
+                NEW.is_tran = TRUE;
+                NEW.is_default_lang = (NEW."default_lang" = NEW."lang") IS TRUE;
 
                 RETURN NEW;
             END
@@ -147,7 +153,10 @@ BEGIN
             LANGUAGE plpgsql
             VOLATILE
             SECURITY DEFINER;
-        ', "base_insert_query", "base_update_query", "tran_query");
+        ',  array_to_string(public.array_format("pk_columns", 'NEW.%1I IS NULL'), ','),
+            "base_default_insert_query", "base_insert_query",
+            "base_update_query",
+            "tran_query");
 
     EXECUTE format('
             CREATE TRIGGER "table"
