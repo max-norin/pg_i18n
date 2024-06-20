@@ -17,7 +17,8 @@ DECLARE
     -- unique, уникальные
     "un_columns"             TEXT[];
     "un_values"              TEXT[];
-    "base_query"             TEXT;
+    "base_insert_query"      TEXT;
+    "base_update_query"      TEXT;
     "tran_query"             TEXT;
     -- вспомогательные
     "column"                 TEXT;
@@ -76,6 +77,7 @@ BEGIN
     "select" = array_prepend('(b."default_lang" = l."lang") IS TRUE AS "is_default_lang"', "select");
     -- колонка - является переводом
     "select" = array_prepend('NOT ((t.*) IS NULL) AS "is_tran"', "select");
+    -- TODO сделать select из таблицы переводов через CASE
 
     -- создание представления с записями по всем языкам
     -- %s - вставляется как простая строка
@@ -101,11 +103,15 @@ BEGIN
     "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "pk_columns" OPERATOR ( public.- ) "sn_columns";
     "un_values" = public.array_format("un_columns", 'NEW.%I');
 
-    "base_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s) RETURNING * INTO "base_new"',
-                         "baserel"::REGCLASS,
-                         array_to_string("pk_columns" || "sn_columns" || "un_columns", ','), array_to_string("pk_values" || "sn_values" || "un_values", ','),
-                          public.get_primary_key_name("baserel"),
-                         array_to_string("un_columns", ','), array_to_string("un_values", ','));
+    "base_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
+                                 "baserel"::REGCLASS,
+                                 array_to_string("pk_columns" || "sn_columns" || "un_columns", ','), array_to_string("pk_values" || "sn_values" || "un_values", ','));
+
+    "pk_values" = public.array_format("pk_columns", 'OLD.%I');
+    "base_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
+                                 "baserel"::REGCLASS,
+                                 array_to_string("un_columns", ','), array_to_string("un_values", ','),
+                                 array_to_string("pk_columns", ','), array_to_string("pk_values", ','));
 
     -- создание запроса для вставки и обновления таблицы переводов
 
@@ -116,7 +122,7 @@ BEGIN
     "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "pk_columns";
     "un_values" = public.array_format("un_columns", 'NEW.%I');
 
-    "tran_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s) RETURNING * INTO "tran_new"',
+    "tran_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s)',
                           "tranrel"::REGCLASS,
                           array_to_string("pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
                           public.get_primary_key_name("tranrel"),
@@ -132,8 +138,8 @@ BEGIN
                 "base_new"  RECORD;
                 "tran_new"  RECORD;
             BEGIN
-                %1s;
-                %2s;
+                IF TG_OP = ''INSERT'' THEN %1s RETURNING * INTO "base_new"; ELSE %2s RETURNING * INTO "base_new"; END IF;
+                %3s RETURNING * INTO "tran_new";
 
                 RETURN NEW;
             END
@@ -141,7 +147,7 @@ BEGIN
             LANGUAGE plpgsql
             VOLATILE
             SECURITY DEFINER;
-        ', "base_query", "tran_query");
+        ', "base_insert_query", "base_update_query", "tran_query");
 
     EXECUTE format('
             CREATE TRIGGER "table"
