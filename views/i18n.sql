@@ -19,7 +19,9 @@ DECLARE
     "base_insert_query"         TEXT;
     "base_default_insert_query" TEXT;
     "base_update_query"         TEXT;
-    "tran_query"                TEXT;
+    "tran_insert_query"         TEXT;
+    "tran_default_insert_query" TEXT;
+    "tran_update_query"         TEXT;
     -- вспомогательные
     "column"                    TEXT;
     "name"                      TEXT;
@@ -114,14 +116,15 @@ BEGIN
     "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "tran_pk_columns";
     "un_values" = public.array_format("un_columns", 'NEW.%I');
 
-    "tran_query" = format('INSERT INTO %1s (%2s) VALUES (%3s) ON CONFLICT ON CONSTRAINT %4I DO UPDATE SET (%5s) = ROW(%6s)',
-                          "tranrel"::REGCLASS,
-                          array_to_string("tran_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
-                          public.get_primary_key_name("tranrel"),
-                          array_to_string("un_columns", ','), array_to_string("un_values", ','));
+    "tran_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
+                                 "tranrel"::REGCLASS,
+                                 array_to_string("tran_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','));
 
-    -- IF TG_OP = 'INSERT' THEN %1s ELSE %2s END IF;
-    -- RAISE NOTICE USING MESSAGE =
+    "tran_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
+                                 "tranrel"::REGCLASS,
+                                 array_to_string("tran_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
+                                 array_to_string("tran_pk_columns", ','), array_to_string(public.array_format("tran_pk_columns", 'OLD.%I'), ','));
+
     EXECUTE format('
             CREATE FUNCTION public.trigger_i18n_view ()
                 RETURNS TRIGGER
@@ -136,7 +139,8 @@ BEGIN
                 ELSE %4s RETURNING * INTO "base_new"; END IF;
                 NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
 
-                %5s RETURNING * INTO "tran_new";
+                IF %5s THEN %6s RETURNING * INTO "tran_new";
+                ELSE %7s RETURNING * INTO "tran_new"; END IF;
                 NEW = jsonb_populate_record(NEW, to_jsonb("tran_new"));
 
                 NEW.is_tran = TRUE;
@@ -148,10 +152,12 @@ BEGIN
             LANGUAGE plpgsql
             VOLATILE
             SECURITY DEFINER;
-        ',  array_to_string(public.array_format("base_pk_columns", 'NEW.%1I IS NULL'), ','),
+        ',  array_to_string(public.array_format("base_pk_columns", 'NEW.%1I IS NULL'), ' AND '),
             "base_default_insert_query", "base_insert_query",
             "base_update_query",
-            "tran_query");
+            array_to_string(public.array_format("tran_pk_columns", 'OLD.%1I IS NULL'), ' AND '),
+            "tran_insert_query",
+            "tran_update_query");
 
     EXECUTE format('
             CREATE TRIGGER "table"
