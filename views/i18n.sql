@@ -9,13 +9,10 @@ DECLARE
     "tran_pk_columns"  CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
     "tran_columns"     CONSTANT TEXT[] = public.get_columns("tranrel");
     -- для создания триггера
-    "pk_values"                 TEXT[];
     -- same name, одноименные
     "sn_columns"       CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
-    "sn_values"        CONSTANT TEXT[] = public.array_format("sn_columns", 'NEW.%I');
     -- unique, уникальные
     "un_columns"                TEXT[];
-    "un_values"                 TEXT[];
     "base_insert_query"         TEXT;
     "base_default_insert_query" TEXT;
     "base_update_query"         TEXT;
@@ -23,8 +20,9 @@ DECLARE
     "tran_default_insert_query" TEXT;
     "tran_update_query"         TEXT;
     -- вспомогательные
-    "column"                    TEXT;
     "name"                      TEXT;
+    "column"                    TEXT;
+    "columns"                   TEXT[] = '{}';
     "select"                    TEXT[] = '{}';
     "query"                     TEXT = '';
 BEGIN
@@ -90,43 +88,42 @@ BEGIN
 
     -- создание запроса для вставки и обновления базовой таблицы
 
-    -- set primary key
-    "pk_values" = public.array_format("base_pk_columns", 'NEW.%I');
     -- set secondary key
     "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "base_pk_columns" OPERATOR ( public.- ) "sn_columns";
-    "un_values" = public.array_format("un_columns", 'NEW.%I');
 
+    "columns" = "base_pk_columns" || "sn_columns" || "un_columns";
     "base_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("base_pk_columns" || "sn_columns" || "un_columns", ','), array_to_string("pk_values" || "sn_values" || "un_values", ','));
+                                 array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','));
+    "columns" = "sn_columns" || "un_columns";
     "base_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("base_pk_columns" || "sn_columns" || "un_columns", ','), array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("pk_values", 1)]) || "sn_values" || "un_values", ','));
+                                 array_to_string("base_pk_columns" || "columns", ','), array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || public.array_format("columns", 'NEW.%I'), ','));
 
+    "columns" = "base_pk_columns" || "un_columns";
     "base_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("base_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
+                                 array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','),
                                  array_to_string("base_pk_columns", ','), array_to_string(public.array_format("base_pk_columns", 'OLD.%I'), ','));
 
     -- создание запроса для вставки и обновления таблицы переводов
 
-    -- set primary key
-    "pk_values" = public.array_format("base_pk_columns", 'NEW.%I');
     -- set secondary key
     "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "base_pk_columns" OPERATOR ( public.- ) '{lang}'::TEXT[];
-    "un_values" = public.array_format("un_columns", 'NEW.%I');
 
+    "columns" = "base_pk_columns" || '{lang}'::TEXT[] || "un_columns";
     "tran_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("base_pk_columns" || '{lang}'::TEXT[] || "un_columns", ','), array_to_string("pk_values" || '{NEW.lang}'::TEXT[] || "un_values", ','));
+                                 array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','));
+    "columns" = "base_pk_columns" || "un_columns";
     "tran_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("base_pk_columns" || '{lang}'::TEXT[] || "un_columns", ','), array_to_string("pk_values" || '{DEFAULT}'::TEXT[] || "un_values", ','));
+                                 array_to_string('{lang}'::TEXT[] || "columns" , ','), array_to_string('{DEFAULT}'::TEXT[] || public.array_format("columns", 'NEW.%I'), ','));
 
-    "pk_values" = public.array_format("tran_pk_columns", 'NEW.%I');
+    "columns" = "tran_pk_columns" || "un_columns";
     "tran_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("tran_pk_columns" || "un_columns", ','), array_to_string("pk_values" || "un_values", ','),
+                                 array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','),
                                  array_to_string("tran_pk_columns", ','), array_to_string(public.array_format("tran_pk_columns", 'OLD.%I'), ','));
 
     EXECUTE format('
