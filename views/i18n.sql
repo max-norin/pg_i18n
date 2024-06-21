@@ -164,7 +164,7 @@ BEGIN
             "tran_update_query");
 
     EXECUTE format('
-            CREATE TRIGGER "table"
+            CREATE TRIGGER "i18n"
                 INSTEAD OF INSERT OR UPDATE
                 ON %1I FOR EACH ROW
             EXECUTE FUNCTION %2s ();
