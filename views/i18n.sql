@@ -59,18 +59,18 @@ BEGIN
                    array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "view_name", "query");
 
-    -- далее b - таблица дефолтных значений, t - таблица переводов, l - таблица языков
+    -- далее d - таблица дефолтных значений, t - таблица переводов, l - таблица языков
 
     -- установка имени представления
     "view_name" = 'v_dictionary';
 
     -- установка select, повторяет то, что выше
-    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'b.%1I';
-    "select" = "select" || (("tran_columns" OPERATOR ( public.- ) "tran_pk_columns") OPERATOR ( public.<< ) 'CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I');
+    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'd.%1I';
+    "select" = "select" || (("tran_columns" OPERATOR ( public.- ) "tran_pk_columns") OPERATOR ( public.<< ) 'CASE WHEN (t.*) IS NULL THEN d.%1$I ELSE t.%1$I END AS %1$I');
     -- lang - lang из таблицы langs, используется из объединения CROSS JOIN "langs"
     -- default_lang - запись с дефолтным языком
     -- is_tran - является переводом
-    "select" = ARRAY['NOT ((t.*) IS NULL) AS "is_tran"', '(b."default_lang" = l."lang") IS TRUE AS "is_default_lang"', 'l."lang"'] || "select";
+    "select" = ARRAY['NOT ((t.*) IS NULL) AS "is_tran"', '(d."default_lang" = l."lang") IS TRUE AS "is_default_lang"', 'l."lang"'] || "select";
 
     -- создание представления с записями по всем языкам
     -- %s - вставляется как простая строка
@@ -78,11 +78,11 @@ BEGIN
     -- WITH - общее табличное выражение с представлением из предыдущего запроса
     -- CROSS JOIN "langs" - соединение значения со всеми языками
     -- LEFT JOIN tranrel - соединение с имеющимися переводами
-    "query" = format('WITH b AS (%1s) SELECT %2s FROM b CROSS JOIN public."langs" l LEFT JOIN %3I t ON %4s AND l."lang" = t."lang"',
+    "query" = format('WITH d AS (%1s) SELECT %2s FROM d CROSS JOIN public."langs" l LEFT JOIN %3I t ON %4s AND l."lang" = t."lang"',
                      "query", -- предыдущий запрос
                      array_to_string("select", ','),
                      "tranrel"::REGCLASS,
-                     array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
+                     array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'd.%1$I = t.%1$I', ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "view_name", "query");
 
     -- создание триггеров
