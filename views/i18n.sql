@@ -39,7 +39,7 @@ BEGIN
 
     -- установка select
     -- добавление колонок базовой таблицы, включая первичные ключи, но без одноименных колонок таблицы переводов
-    "select" = public.array_format("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
+    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'b.%1I';
     -- добавление колонок из таблицы переводов
     FOREACH "column" IN ARRAY "tran_columns" OPERATOR ( public.- ) "tran_pk_columns" LOOP
         -- если колонка есть среди колонок таблицы baserel, то использовать особую вставку CASE
@@ -56,7 +56,7 @@ BEGIN
                    array_to_string("select", ','),
                    "baserel"::REGCLASS,
                    "tranrel"::REGCLASS,
-                   array_to_string(public.array_format("base_pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
+                   array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "view_name", "query");
 
     -- далее b - таблица дефолтных значений, t - таблица переводов, l - таблица языков
@@ -65,8 +65,8 @@ BEGIN
     "view_name" = 'v_dictionary';
 
     -- установка select, повторяет то, что выше
-    "select" = public.array_format("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
-    "select" = "select" || public.array_format("tran_columns" OPERATOR ( public.- ) "tran_pk_columns", 'CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I');
+    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'b.%1I';
+    "select" = "select" || (("tran_columns" OPERATOR ( public.- ) "tran_pk_columns") OPERATOR ( public.<< ) 'CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I');
     -- lang - lang из таблицы langs, используется из объединения CROSS JOIN "langs"
     -- default_lang - запись с дефолтным языком
     -- is_tran - является переводом
@@ -82,7 +82,7 @@ BEGIN
                      "query", -- предыдущий запрос
                      array_to_string("select", ','),
                      "tranrel"::REGCLASS,
-                     array_to_string(public.array_format("base_pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
+                     array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
     EXECUTE format('CREATE VIEW %1I AS %2s;', "view_name", "query");
 
     -- создание триггеров
@@ -95,17 +95,17 @@ BEGIN
     "columns" = "base_pk_columns" || "sn_columns" || "un_columns";
     "base_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','));
+                                 array_to_string("columns", ','), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ','));
     "columns" = "sn_columns" || "un_columns";
     "base_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("base_pk_columns" || "columns", ','), array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || public.array_format("columns", 'NEW.%I'), ','));
+                                 array_to_string("base_pk_columns" || "columns", ','), array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || ("columns" OPERATOR ( public.<< ) 'NEW.%I'), ','));
 
     "columns" = "base_pk_columns" || "un_columns";
     "base_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','),
-                                 array_to_string("base_pk_columns", ','), array_to_string(public.array_format("base_pk_columns", 'OLD.%I'), ','));
+                                 array_to_string("columns", ','), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ','),
+                                 array_to_string("base_pk_columns", ','), array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ','));
 
     -- создание запроса для вставки и обновления таблицы переводов
 
@@ -115,17 +115,17 @@ BEGIN
     "columns" = "tran_pk_columns" || "un_columns";
     "tran_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','));
+                                 array_to_string("columns", ','), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ','));
     "columns" = "base_pk_columns" || "un_columns";
     "tran_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string('{lang}'::TEXT[] || "columns" , ','), array_to_string('{DEFAULT}'::TEXT[] || public.array_format("columns", 'NEW.%I'), ','));
+                                 array_to_string('{lang}'::TEXT[] || "columns" , ','), array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'NEW.%I'), ','));
 
     "columns" = "tran_pk_columns" || "un_columns";
     "tran_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s)=(%5s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','),
-                                 array_to_string("tran_pk_columns", ','), array_to_string(public.array_format("tran_pk_columns", 'OLD.%I'), ','));
+                                 array_to_string("columns", ','), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ','),
+                                 array_to_string("tran_pk_columns", ','), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ','));
 
     "trigger_name" = 'public.trigger_i18n_view';
     EXECUTE format('
@@ -158,7 +158,7 @@ BEGIN
             VOLATILE
             SECURITY DEFINER;
         ',  "trigger_name",
-            array_to_string(public.array_format("base_pk_columns", 'NEW.%1I IS NULL'), ' AND '),
+            array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1I IS NULL', ' AND '),
             "base_default_insert_query", "base_insert_query",
             "base_update_query",
             "tran_default_insert_query", "tran_insert_query",

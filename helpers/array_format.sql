@@ -1,4 +1,4 @@
-CREATE FUNCTION  public.array_format ("textarray" TEXT[], "formatstr" TEXT, VARIADIC "formatarg" TEXT[] = '{}')
+CREATE FUNCTION  public.array_format ("textarray" TEXT[], "formatstr" TEXT)
     RETURNS TEXT[]
     AS $$
 DECLARE
@@ -6,7 +6,7 @@ DECLARE
     "result"  TEXT[];
 BEGIN
     FOREACH "item" IN ARRAY "textarray" LOOP
-        "result" = array_append("result", format("formatstr", VARIADIC ("item" || "formatarg")));
+        "result" = array_append("result", format("formatstr", "item"));
     END LOOP;
 
     RETURN "result";
@@ -17,6 +17,13 @@ STABLE -- функция не может модифицировать базу �
 RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 -- TODO написать
-COMMENT ON FUNCTION  public.array_format (TEXT[], TEXT, VARIADIC TEXT[]) IS '';
+COMMENT ON FUNCTION  public.array_format (TEXT[], TEXT) IS '';
 
 -- TODO тут точно должен быть STABLE ????
+
+CREATE OPERATOR public.<< (
+    LEFTARG = TEXT[], RIGHTARG = TEXT, FUNCTION = public.array_format
+    );
+
+-- TODO написать
+COMMENT ON OPERATOR public.<< (TEXT[], TEXT) IS '';
