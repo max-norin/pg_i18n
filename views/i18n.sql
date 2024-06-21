@@ -24,8 +24,12 @@ DECLARE
     "column"                    TEXT;
     "columns"                   TEXT[] = '{}';
     "select"                    TEXT[] = '{}';
-    "query"                     TEXT = '';
+    "query"                     TEXT;
 BEGIN
+    -- проверка, что pk_columns существуют
+    IF ("baserel" IS NULL OR "tranrel" IS NULL) THEN
+        RAISE EXCEPTION USING MESSAGE = '"baserel" and "tranrel" table must be defined';
+    END IF;
     -- проверка, что pk_columns существуют
     IF ("base_pk_columns" IS NULL) THEN
         RAISE EXCEPTION USING MESSAGE = '"baserel" table must have primary keys';
@@ -34,7 +38,7 @@ BEGIN
     -- далее b - базовая таблица, t - таблица переводов
 
     -- установка имени представления
-    "view_name" = 'v_dictionary_default';
+    "view_name" = public.get_default_i18n_view_name ("baserel", "tranrel");
 
     -- установка select
     -- добавление колонок базовой таблицы, включая первичные ключи, но без одноименных колонок таблицы переводов
@@ -61,7 +65,7 @@ BEGIN
     -- далее d - таблица дефолтных значений, t - таблица переводов, l - таблица языков
 
     -- установка имени представления
-    "view_name" = 'v_dictionary';
+    "view_name" = public.get_i18n_view_name ("baserel", "tranrel");
 
     -- установка select, повторяет то, что выше
     "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'd.%1I';
@@ -126,7 +130,7 @@ BEGIN
                                  array_to_string("columns", ','), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ','),
                                  array_to_string("tran_pk_columns", ','), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ','));
 
-    "trigger_name" = 'public.trigger_i18n_view';
+    "trigger_name" = public.get_i18n_trigger_name ("baserel", "tranrel");
     EXECUTE format('
             CREATE FUNCTION %1s ()
                 RETURNS TRIGGER
@@ -173,10 +177,4 @@ END
 $$
 LANGUAGE plpgsql;
 
--- TODO проверить, что если отправить null в параметры, то работать не будет
--- TODO проверить какие были бы массивы и код, если использовать курсоры
--- TODO проверить, как будет работать при изменении колонок в таблице
--- TODO проверить, как будет работать с первичным ключом в несколько колонок
--- TODO добавить функции именования
--- TODO добавить схему для определения представлений и триггеров
 -- TODO удаление триггера после удаления представления
