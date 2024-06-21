@@ -110,9 +110,9 @@ BEGIN
     -- создание запроса для вставки и обновления таблицы переводов
 
     -- set secondary key
-    "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "base_pk_columns" OPERATOR ( public.- ) '{lang}'::TEXT[];
+    "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "tran_pk_columns";
 
-    "columns" = "base_pk_columns" || '{lang}'::TEXT[] || "un_columns";
+    "columns" = "tran_pk_columns" || "un_columns";
     "tran_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','));
