@@ -60,7 +60,7 @@ BEGIN
                    "baserel"::REGCLASS,
                    "tranrel"::REGCLASS,
                    array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
-    EXECUTE format('CREATE VIEW %1I AS %2s;', "view_name", "query");
+    EXECUTE format('CREATE VIEW %1s AS %2s;', "view_name", "query");
 
     -- далее d - таблица дефолтных значений, t - таблица переводов, l - таблица языков
 
@@ -86,7 +86,7 @@ BEGIN
                      array_to_string("select", ','),
                      "tranrel"::REGCLASS,
                      array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'd.%1$I = t.%1$I', ' AND '));
-    EXECUTE format('CREATE VIEW %1I AS %2s;', "view_name", "query");
+    EXECUTE format('CREATE VIEW %1s AS %2s;', "view_name", "query");
 
     -- создание триггеров
 
@@ -170,7 +170,7 @@ BEGIN
     EXECUTE format('
             CREATE TRIGGER "i18n"
                 INSTEAD OF INSERT OR UPDATE
-                ON %1I FOR EACH ROW
+                ON %1s FOR EACH ROW
             EXECUTE FUNCTION %2s ();
         ', "view_name", "trigger_name");
 END
