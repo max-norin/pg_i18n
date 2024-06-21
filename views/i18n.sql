@@ -8,9 +8,9 @@ DECLARE
     "tran_pk_columns"  CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
     "tran_columns"     CONSTANT TEXT[] = public.get_columns("tranrel");
     -- для создания триггера
-    -- same name, одноименные
+    -- same name, одноименные колонки
     "sn_columns"       CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
-    -- unique, уникальные
+    -- unique, уникальные колонки
     "un_columns"                TEXT[];
     "base_insert_query"         TEXT;
     "base_default_insert_query" TEXT;
