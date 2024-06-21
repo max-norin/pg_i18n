@@ -7,6 +7,8 @@ DECLARE
     "base_columns"     CONSTANT TEXT[] = public.get_columns("baserel");
     "tran_pk_columns"  CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
     "tran_columns"     CONSTANT TEXT[] = public.get_columns("tranrel");
+    "default_view_name"CONSTANT TEXT = public.get_default_i18n_view_name ("baserel", "tranrel");
+    "view_name"        CONSTANT TEXT = public.get_i18n_view_name ("baserel", "tranrel");
     -- для создания триггера
     -- same name, одноименные колонки
     "sn_columns"       CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
@@ -18,9 +20,8 @@ DECLARE
     "tran_insert_query"         TEXT;
     "tran_default_insert_query" TEXT;
     "tran_update_query"         TEXT;
+    "trigger_name"     CONSTANT TEXT = public.get_i18n_trigger_name ("baserel", "tranrel");
     -- вспомогательные
-    "view_name"                 TEXT;
-    "trigger_name"              TEXT;
     "column"                    TEXT;
     "columns"                   TEXT[] = '{}';
     "select"                    TEXT[] = '{}';
@@ -36,9 +37,6 @@ BEGIN
     END IF;
 
     -- далее b - базовая таблица, t - таблица переводов
-
-    -- установка имени представления
-    "view_name" = public.get_default_i18n_view_name ("baserel", "tranrel");
 
     -- установка select
     -- добавление колонок базовой таблицы, включая первичные ключи, но без одноименных колонок таблицы переводов
@@ -60,12 +58,9 @@ BEGIN
                    "baserel"::REGCLASS,
                    "tranrel"::REGCLASS,
                    array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
-    EXECUTE format('CREATE VIEW %1s AS %2s;', "view_name", "query");
+    EXECUTE format('CREATE VIEW %1s AS %2s;', "default_view_name", "query");
 
     -- далее d - таблица дефолтных значений, t - таблица переводов, l - таблица языков
-
-    -- установка имени представления
-    "view_name" = public.get_i18n_view_name ("baserel", "tranrel");
 
     -- установка select, повторяет то, что выше
     "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'd.%1I';
@@ -81,9 +76,9 @@ BEGIN
     -- WITH - общее табличное выражение с представлением из предыдущего запроса
     -- CROSS JOIN "langs" - соединение значения со всеми языками
     -- LEFT JOIN tranrel - соединение с имеющимися переводами
-    "query" = format('WITH d AS (%1s) SELECT %2s FROM d CROSS JOIN public."langs" l LEFT JOIN %3I t ON %4s AND l."lang" = t."lang"',
-                     "query", -- предыдущий запрос
+    "query" = format('SELECT %1s FROM %2I d CROSS JOIN public."langs" l LEFT JOIN %3I t ON %4s AND l."lang" = t."lang"',
                      array_to_string("select", ','),
+                     "default_view_name"::REGCLASS,
                      "tranrel"::REGCLASS,
                      array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'd.%1$I = t.%1$I', ' AND '));
     EXECUTE format('CREATE VIEW %1s AS %2s;', "view_name", "query");
@@ -130,7 +125,6 @@ BEGIN
                                  array_to_string("columns", ','), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ','),
                                  array_to_string("tran_pk_columns", ','), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ','));
 
-    "trigger_name" = public.get_i18n_trigger_name ("baserel", "tranrel");
     EXECUTE format('
             CREATE FUNCTION %1s ()
                 RETURNS TRIGGER
