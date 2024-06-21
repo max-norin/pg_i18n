@@ -20,7 +20,8 @@ DECLARE
     "tran_default_insert_query" TEXT;
     "tran_update_query"         TEXT;
     -- вспомогательные
-    "name"                      TEXT;
+    "view_name"                 TEXT;
+    "trigger_name"              TEXT;
     "column"                    TEXT;
     "columns"                   TEXT[] = '{}';
     "select"                    TEXT[] = '{}';
@@ -34,7 +35,7 @@ BEGIN
     -- далее b - базовая таблица, t - таблица переводов
 
     -- установка имени представления
-    "name" = 'v_dictionary_default';
+    "view_name" = 'v_dictionary_default';
 
     -- установка select
     -- добавление колонок базовой таблицы, включая первичные ключи, но без одноименных колонок таблицы переводов
@@ -56,12 +57,12 @@ BEGIN
                    "baserel"::REGCLASS,
                    "tranrel"::REGCLASS,
                    array_to_string(public.array_format("base_pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
-    EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
+    EXECUTE format('CREATE VIEW %1I AS %2s;', "view_name", "query");
 
     -- далее b - таблица дефолтных значений, t - таблица переводов, l - таблица языков
 
     -- установка имени представления
-    "name" = 'v_dictionary';
+    "view_name" = 'v_dictionary';
 
     -- установка select, повторяет то, что выше
     "select" = public.array_format("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns"), 'b.%1I');
@@ -82,7 +83,7 @@ BEGIN
                      array_to_string("select", ','),
                      "tranrel"::REGCLASS,
                      array_to_string(public.array_format("base_pk_columns", 'b.%1$I = t.%1$I'), ' AND '));
-    EXECUTE format('CREATE VIEW %1I AS %2s;', "name", "query");
+    EXECUTE format('CREATE VIEW %1I AS %2s;', "view_name", "query");
 
     -- создание триггеров
 
@@ -126,8 +127,9 @@ BEGIN
                                  array_to_string("columns", ','), array_to_string(public.array_format("columns", 'NEW.%I'), ','),
                                  array_to_string("tran_pk_columns", ','), array_to_string(public.array_format("tran_pk_columns", 'OLD.%I'), ','));
 
+    "trigger_name" = 'public.trigger_i18n_view';
     EXECUTE format('
-            CREATE FUNCTION public.trigger_i18n_view ()
+            CREATE FUNCTION %1s ()
                 RETURNS TRIGGER
                 AS $trigger$
             DECLARE
@@ -135,9 +137,9 @@ BEGIN
                 "tran_new"  RECORD;
             BEGIN
                 IF TG_OP = ''INSERT'' THEN
-                    IF %1s THEN %2s RETURNING * INTO "base_new";
-                    ELSE %3s RETURNING * INTO "base_new"; END IF;
-                ELSE %4s RETURNING * INTO "base_new"; END IF;
+                    IF %2s THEN %3s RETURNING * INTO "base_new";
+                    ELSE %4s RETURNING * INTO "base_new"; END IF;
+                ELSE %5s RETURNING * INTO "base_new"; END IF;
                 NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
 
                 IF TG_OP = ''INSERT'' THEN
@@ -155,7 +157,8 @@ BEGIN
             LANGUAGE plpgsql
             VOLATILE
             SECURITY DEFINER;
-        ',  array_to_string(public.array_format("base_pk_columns", 'NEW.%1I IS NULL'), ' AND '),
+        ',  "trigger_name",
+            array_to_string(public.array_format("base_pk_columns", 'NEW.%1I IS NULL'), ' AND '),
             "base_default_insert_query", "base_insert_query",
             "base_update_query",
             "tran_default_insert_query", "tran_insert_query",
@@ -165,8 +168,8 @@ BEGIN
             CREATE TRIGGER "table"
                 INSTEAD OF INSERT OR UPDATE
                 ON %1I FOR EACH ROW
-            EXECUTE FUNCTION public.trigger_i18n_view();
-        ', "name");
+            EXECUTE FUNCTION %2s ();
+        ', "view_name", "trigger_name");
 END
 $$
 LANGUAGE plpgsql;
