@@ -6,7 +6,7 @@
 
 ## Getting Started
 
-### Install
+# Install
 
 Download the files from [dist](./dist) to your `extension` folder PostgreSQL and run the following
 commands.
@@ -23,12 +23,12 @@ Install the extension.
 ```postgresql
 CREATE EXTENSION "pg_i18n"
     SCHEMA "dictionaries"
-    VERSION '1.1';
+    VERSION '2.0';
 ```
 
 [More about the extension and the control file](https://www.postgresql.org/docs/current/extend-extensions.html)
 
-### Usage
+# Usage
 
 The extension creates `"langs"` table that stores the language tags used. You need to populate the
 table with data. For example:
@@ -43,12 +43,9 @@ VALUES ('ru', NULL, NULL, TRUE, 'Русский'),
 
 There are two ways to implement multilingual tables.
 
-#### 1. Dictionary way
+## Create view
 
-> _Dictionary way_ translation will be provided for each language tag. If the translation is not in
-> the translation table, then the default value from the main table will be presented.
-
-The `create_dictionary_view` procedure will create a view in which, in each language tag will be
+The `create_i18n_view` procedure will create a view in which, in each language tag will be
 provided with a translation if it is in the translation table, else a default value.
 Data in views can update.
 
@@ -57,73 +54,22 @@ had the same name as the column specified as `PRIMARY KEY` in the main table.
 
 ```postgresql
 -- main table
-CREATE TABLE "dictionary"
+CREATE TABLE public."words"
 (
-    "id"        SERIAL PRIMARY KEY,
-    "title"     VARCHAR(255) NOT NULL, -- default value
-    "is_active" BOOLEAN DEFAULT TRUE
-);
--- translation table. note: it inherits from "lang_base_tran"
-CREATE TABLE "dictionary_trans"
+  "id"       SERIAL PRIMARY KEY,
+  "title"    VARCHAR(255) NOT NULL, -- default value
+  "original" VARCHAR(255)
+) INHERITS (public."untrans");
+-- translation table
+CREATE TABLE public."word_trans"
 (
-    "id"    INTEGER NOT NULL REFERENCES "dictionary" ("id") ON UPDATE CASCADE,
-    "title" VARCHAR(255), -- translation of "title" into language "lang"
-    PRIMARY KEY ("lang", "id")
-) INHERITS ("lang_base_tran");
--- create view
-CALL create_dictionary_view('v_dictionary'::TEXT, 'dictionary'::REGCLASS, 'dictionary_trans'::REGCLASS);
-```
-
-#### 2. User way
-
-> _User way_ only translated data is returned.
-
-The `create_user_view` procedure will create a view in which results are returned only if there is a
-translation.
-Data in views can insert and update.
-
-Important condition: in the translation table, the column pointing to the foreign key to the main table
-had the same name as the column specified as `PRIMARY KEY` in the main table.
-
-```postgresql
--- main table. note: it inherits from "lang_base"
-CREATE TABLE "user"
-(
-    "id"       SERIAL PRIMARY KEY,
-    "nickname" VARCHAR(100) NOT NULL UNIQUE
-    -- missing "title"
-) INHERITS ("lang_base");
--- translation table. note: it inherits from "lang_base_tran"
-CREATE TABLE "user_trans"
-(
-    "id"    BIGINT NOT NULL REFERENCES "user" ("id") ON UPDATE CASCADE,
-    "title" VARCHAR(255),
-    PRIMARY KEY ("id", "lang")
-) INHERITS ("lang_base_tran");
--- create view
-CALL create_user_view('v_user'::TEXT, '"user"'::REGCLASS, 'user_trans'::REGCLASS);
-```
-
-#### User columns
-
-For the create_dictionary_view() function, you can specify user set of columns, different from the standard set.
-This is done using the third parameter, you need to specify an array of column values.
-
-```postgresql
-CALL create_user_view(
-        'v_users'::TEXT,
-        'users'::REGCLASS,
-        'user_trans'::REGCLASS,
-        ARRAY ['id', 'b.nickname', 'bt.title']::TEXT[]
-  );
--- OR using get_columns() function
-CALL create_user_view(
-        'v_users'::TEXT,
-        'users'::REGCLASS,
-        'user_trans'::REGCLASS,
-        get_columns('users'::REGCLASS, TRUE, 'b') ||
-        (get_columns('user_trans'::REGCLASS) - ARRAY ['id', 'created_at', 'updated_at']::TEXT[])
-    );
+  "id"    INTEGER NOT NULL REFERENCES public."words" ("id") ON UPDATE CASCADE,
+  PRIMARY KEY ("id", "lang"),
+  "title" VARCHAR(255), -- translation of "title" into language "lang"
+  "slang" VARCHAR(255)
+) INHERITS (public."trans");
+-- создание представления
+CALL create_i18n_view('public.words'::REGCLASS, 'public.word_trans'::REGCLASS);
 ```
 
 ## Domains
@@ -313,41 +259,3 @@ INSERT INTO "v_user"
     (id, default_lang, nickname, lang, title)
 VALUES (DEFAULT, 'ru', 'max', 'ru', 'Макс');
 ```
-
-## Files
-
-- `helpers/*.sql` helper functions
-    - [array_except](./helpers/array_except.sql)
-    - [array_intersect](./helpers/array_intersect.sql)
-    - [format_table_name](./helpers/format_table_name.sql)
-    - [get_columns](./helpers/get_columns.sql)
-    - [get_constraintdefs](helpers/get_constraintdefs.sql)
-    - [get_primary_key](./helpers/get_primary_key.sql)
-    - [insert_or_update_using_arrays](./helpers/insert_or_update_using_arrays.sql)
-    - [insert_or_update_using_records](./helpers/insert_or_update_using_records.sql)
-    - [insert_using_arrays](./helpers/insert_using_arrays.sql)
-    - [insert_using_records](./helpers/insert_using_records.sql)
-    - [update_using_arrays](./helpers/update_using_arrays.sql)
-    - [update_using_records](./helpers/update_using_records.sql)
-- `rules/*.sql` rules for domains
-    - [lang](./rules/lang.sql)
-    - [language](./rules/language.sql)
-    - [region](./rules/region.sql)
-    - [script](./rules/script.sql)
-- `domains/*.sql` used domains
-    - [lang](./domains/lang.sql)
-    - [language](./domains/language.sql)
-    - [region](./domains/region.sql)
-    - [script](./domains/script.sql)
-- `tables/*.sql` definition `"langs"` table and parent tables (`"lang_base"` `"lang_base_tran"`)
-- [event_triggers/add_constraints_from_lang_parent_tables.sql](./event_triggers/add_constraints_from_lang_parent_tables.sql)
-  event trigger
-- [init.sql](./init.sql) назначение событийного триггера
-- `views/*.sql` procedures for create views
-    - [dictinary](./views/dictinary.sql)
-    - [user](./views/user.sql)
-- `triggers/*.sql` triggers `INSTEAD OF` for view
-    - [update_dictionary_view](./triggers/update_dictionary_view.sql)
-    - [insert_user_view](./triggers/insert_user_view.sql)
-    - [update_user_view](./triggers/update_user_view.sql)
-- [test/*.sql](./test) test files

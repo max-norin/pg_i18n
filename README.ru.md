@@ -5,9 +5,8 @@
 
 > Расширение позволяет легко и просто создавать мультиязычные базы данных.
 
-## Основное
 
-### Установка
+# Установка
 
 Скачайте себе в папку `extension` PostgreSQL файлы из [dist](./dist) и выполните следующие команды.
 
@@ -23,11 +22,11 @@ ALTER ROLE "postgres" SET search_path TO "public", "dictionaries";
 ```postgresql
 CREATE EXTENSION "pg_i18n"
     SCHEMA "dictionaries"
-    VERSION '1.1';
+    VERSION '2.0';
 ```
 [Подробнее про расширение и файл control](https://postgrespro.ru/docs/postgresql/14/extend-extensions)
 
-### Использование
+# Использование
 
 Расширение создает таблицу `"langs"`, где хранятся используемые языковые теги. Нужно
 наполнить таблицу данными. Например:
@@ -37,17 +36,11 @@ INSERT INTO "dictionaries"."langs"("language", "script", "region", "is_active", 
 VALUES ('ru', NULL, NULL, TRUE, 'Русский'),
        ('udm', NULL, NULL, TRUE, 'Удмурт'),
        ('en', NULL, 'US', TRUE, 'English');
-
 ```
 
-Далее есть два способа реализации мультиязычных таблиц.
+## Создание представления
 
-#### 1. Словарный способ
-
-> _Словарный способ_ - на каждый языковой тег будет предоставлен перевод. Если перевода нет
-> в таблице переводов, то будет представлено значение по умолчанию из основной таблицы.
-
-Процедура `create_dictionary_view` создаст представление, где на каждый языковой тег будет
+Процедура `create_i18n_view` создаст представление, где на каждый языковой тег будет
 предоставлен перевод, если он есть в таблице переводов, в противном случае значение по умолчанию.
 Данные в представлении можно обновлять.
 
@@ -56,75 +49,23 @@ VALUES ('ru', NULL, NULL, TRUE, 'Русский'),
 
 ```postgresql
 -- основная таблица
-CREATE TABLE "dictionary"
+CREATE TABLE public."words"
 (
-    "id"        SERIAL PRIMARY KEY,
-    "title"     VARCHAR(255) NOT NULL, -- значение по умолчанию
-    "is_active" BOOLEAN DEFAULT TRUE
-);
--- таблица переводов. обратите внимание, что она наследуется от "lang_base_tran" 
-CREATE TABLE "dictionary_trans"
+  "id"       SERIAL PRIMARY KEY,
+  "title"    VARCHAR(255) NOT NULL, -- значение по умолчанию
+  "original" VARCHAR(255)
+) INHERITS (public."untrans");
+-- таблица переводов
+CREATE TABLE public."word_trans"
 (
-    "id"    INTEGER NOT NULL REFERENCES "dictionary" ("id") ON UPDATE CASCADE,
-    "title" VARCHAR(255), -- перевод "title" на язык "lang"
-    PRIMARY KEY ("lang", "id")
-) INHERITS ("lang_base_tran");
+  "id"    INTEGER NOT NULL REFERENCES public."words" ("id") ON UPDATE CASCADE,
+  PRIMARY KEY ("id", "lang"),
+  "title" VARCHAR(255), -- перевод "title" на язык "lang"
+  "slang" VARCHAR(255)
+) INHERITS (public."trans");
 -- создание представления
-CALL create_dictionary_view('v_dictionary'::TEXT, 'dictionary'::REGCLASS, 'dictionary_trans'::REGCLASS);
+CALL create_i18n_view('public.words'::REGCLASS, 'public.word_trans'::REGCLASS);
 ```
-
-#### 2. Пользовательский способ
-
-> _Пользовательский способ_ - выдаются только переведенные данные.
-
-Процедура `create_user_view` создаст представление, где выдаются результаты только при наличии
-перевода.
-Данные в представлении можно вставлять и обновлять.
-
-Важное условие: в таблице переводов колонка, указывающая на внешний ключ к основной таблице,
-имела такое же имя, как колока указанная, как `PRIMARY KEY` в основной таблице.
-
-```postgresql
--- основная таблица. обратите внимание, что она наследуется от "lang_base"
-CREATE TABLE "user"
-(
-    "id"       SERIAL PRIMARY KEY,
-    "nickname" VARCHAR(100) NOT NULL UNIQUE
-    -- отсутствует "title"
-) INHERITS ("lang_base");
--- таблица переводов. обратите внимание, что она наследуется от "lang_base_tran"
-CREATE TABLE "user_trans"
-(
-    "id"    BIGINT NOT NULL REFERENCES "user" ("id") ON UPDATE CASCADE,
-    "title" VARCHAR(255),
-    PRIMARY KEY ("id", "lang")
-) INHERITS ("lang_base_tran");
--- создание представления
-CALL create_user_view('v_user'::TEXT, '"user"'::REGCLASS, 'user_trans'::REGCLASS);
-```
-
-#### Пользовательские колонки
-
-Для функции `create_dictionary_view()` можно указать свой набор колонок отличный от стандартного набора. 
-Это делается с помощью третьего параметра, нужно указать массив значений колонок.
-
-```postgresql
-CALL create_user_view(
-        'v_users'::TEXT,
-        'users'::REGCLASS,
-        'user_trans'::REGCLASS,
-        ARRAY ['id', 'b.nickname', 'bt.title']::TEXT[]
-  );
--- ИЛИ С помощью функции get_columns()
-CALL create_user_view(
-        'v_users'::TEXT,
-        'users'::REGCLASS,
-        'user_trans'::REGCLASS,
-        get_columns('users'::REGCLASS, TRUE, 'b') ||
-        (get_columns('user_trans'::REGCLASS) - ARRAY ['id', 'created_at', 'updated_at']::TEXT[])
-    );
-```
-
 
 ## Домены
 
@@ -318,47 +259,3 @@ INSERT INTO "v_user"
     (id, default_lang, nickname, lang, title)
 VALUES (DEFAULT, 'ru', 'max', 'ru', 'Макс');
 ```
-
-## Файлы
-
-- `helpers/*.sql` вспомогательные функции
-  - [array_except](./helpers/array_except.sql)
-  - [array_intersect](./helpers/array_intersect.sql)
-  - [format_table_name](./helpers/format_table_name.sql)
-  - [get_columns](./helpers/get_columns.sql)
-  - [get_constraintdefs](helpers/get_constraintdefs.sql)
-  - [get_primary_key](./helpers/get_primary_key.sql)
-  - [insert_or_update_using_arrays](./helpers/insert_or_update_using_arrays.sql)
-  - [insert_or_update_using_records](./helpers/insert_or_update_using_records.sql)
-  - [insert_using_arrays](./helpers/insert_using_arrays.sql)
-  - [insert_using_records](./helpers/insert_using_records.sql)
-  - [update_using_arrays](./helpers/update_using_arrays.sql)
-  - [update_using_records](./helpers/update_using_records.sql)
-- `rules/*.sql` правила для доменов
-    - [lang](./rules/lang.sql)
-    - [language](./rules/language.sql)
-    - [region](./rules/region.sql)
-    - [script](./rules/script.sql)
-- `domains/*.sql` используемые домены
-    - [lang](./domains/lang.sql)
-    - [language](./domains/language.sql)
-    - [region](./domains/region.sql)
-    - [script](./domains/script.sql)
-- `tables/*.sql` определение таблицы `"langs"`, родительских таблиц `"lang_base"` `"lang_base_tran"`
-- [event_triggers/add_constraints_from_lang_parent_tables.sql](./event_triggers/add_constraints_from_lang_parent_tables.sql)
-  событийный триггер
-- [init.sql](./init.sql) назначение событийного триггера
-- `views/*.sql` процедуры создания представлений
-    - [dictinary](./views/dictinary.sql)
-    - [user](./views/user.sql)
-- `triggers/*.sql` триггеры `INSTEAD OF` для представлений
-    - [update_dictionary_view](./triggers/update_dictionary_view.sql)
-    - [insert_user_view](./triggers/insert_user_view.sql)
-    - [update_user_view](./triggers/update_user_view.sql)
-- [test/*.sql](./test) тестовые файлы
-
-## Полезное
-
-- [Pseudotypes](https://www.postgresql.org/docs/current/datatype-pseudo.html)
-- [Functions with Variable Numbers of Arguments](https://www.postgresql.org/docs/current/xfunc-sql.html#XFUNC-SQL-VARIADIC-FUNCTIONS)
-- [Object Identifier Types](https://www.postgresql.org/docs/current/datatype-oid.html#DATATYPE-OID-TABLE)
