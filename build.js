@@ -3,13 +3,12 @@ import * as path from 'path'
 import get_files from './get_files.js'
 
 const files = [
-  ...get_files('./helpers'),
   ...get_files('./rules'),
   ...get_files('./domains'),
   ...get_files('./tables'),
-  ...get_files('./event_triggers'),
+  ...get_files('./helpers'),
   ...get_files('./views'),
-  ...get_files('./triggers'),
+  ...get_files('./event-triggers'),
   './init.sql',
 ]
 
