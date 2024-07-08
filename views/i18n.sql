@@ -129,6 +129,7 @@ BEGIN
             CREATE FUNCTION %1s ()
                 RETURNS TRIGGER
                 AS $trigger$
+            /*pg_i18n:trigger*/
             DECLARE
                 "base_new"  RECORD;
                 "tran_new"  RECORD;
