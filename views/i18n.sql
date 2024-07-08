@@ -36,9 +36,10 @@ BEGIN
         RAISE EXCEPTION USING MESSAGE = '"baserel" table must have primary keys';
     END IF;
 
+    -- создание default_i18n_view
     -- далее b - базовая таблица, t - таблица переводов
 
-    -- установка select
+    -- установка массива select
     -- добавление колонок базовой таблицы, включая первичные ключи, но без одноименных колонок таблицы переводов
     "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'b.%1I';
     -- добавление колонок из таблицы переводов
@@ -60,6 +61,7 @@ BEGIN
                    array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
     EXECUTE format('CREATE VIEW %1s AS %2s;', "default_view_name", "query");
 
+    -- создание i18n_view
     -- далее d - таблица дефолтных значений, t - таблица переводов, l - таблица языков
 
     -- установка select, повторяет то, что выше
@@ -171,5 +173,3 @@ BEGIN
 END
 $$
 LANGUAGE plpgsql;
-
--- TODO удаление триггера после удаления представления
