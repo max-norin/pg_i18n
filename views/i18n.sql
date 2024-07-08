@@ -1,5 +1,5 @@
 -- создание представления c возможность редактирования
-CREATE OR REPLACE PROCEDURE public.create_i18n_view ("baserel" OID, "tranrel" OID)
+CREATE PROCEDURE public.create_i18n_view ("baserel" OID, "tranrel" OID)
     AS $$
 DECLARE
     -- для создания представлений
