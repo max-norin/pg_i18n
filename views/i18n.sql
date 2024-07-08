@@ -7,7 +7,7 @@ DECLARE
     "base_columns"     CONSTANT TEXT[] = public.get_columns("baserel");
     "tran_pk_columns"  CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
     "tran_columns"     CONSTANT TEXT[] = public.get_columns("tranrel");
-    "default_view_name"CONSTANT TEXT = public.get_default_i18n_view_name ("baserel", "tranrel");
+    "default_view_name"CONSTANT TEXT = public.get_i18n_default_view_name ("baserel", "tranrel");
     "view_name"        CONSTANT TEXT = public.get_i18n_view_name ("baserel", "tranrel");
     -- для создания триггера
     -- same name, одноименные колонки
@@ -36,7 +36,7 @@ BEGIN
         RAISE EXCEPTION USING MESSAGE = '"baserel" table must have primary keys';
     END IF;
 
-    -- создание default_i18n_view
+    -- создание i18n_default_view
     -- далее b - базовая таблица, t - таблица переводов
 
     -- установка массива select

@@ -1,4 +1,4 @@
-CREATE FUNCTION  public.get_default_i18n_view_name ("baserel" OID, "tranrel" OID)
+CREATE FUNCTION  public.get_i18n_default_view_name ("baserel" OID, "tranrel" OID)
     RETURNS TEXT
     AS $$
 BEGIN
