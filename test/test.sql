@@ -14,3 +14,7 @@ SET title = 'd_max1', lang = 'ru'
 WHERE id = 5
   AND lang = 'en'
 RETURNING *;
+
+DROP VIEW public.v_dictionary;
+DROP VIEW public.v_words;
+DROP VIEW public.v_products;
