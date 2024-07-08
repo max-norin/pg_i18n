@@ -20,7 +20,7 @@ DECLARE
     "tran_insert_query"         TEXT;
     "tran_default_insert_query" TEXT;
     "tran_update_query"         TEXT;
-    "trigger_name"     CONSTANT TEXT = public.get_i18n_trigger_name ("baserel", "tranrel");
+    "trigger_name"     CONSTANT TEXT = public.get_i18n_trigger_name ("view_name");
     -- вспомогательные
     "column"                    TEXT;
     "columns"                   TEXT[] = '{}';

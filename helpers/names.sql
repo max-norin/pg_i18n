@@ -28,14 +28,13 @@ STABLE -- функция не может модифицировать базу �
 RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 
-CREATE FUNCTION  public.get_i18n_trigger_name ("baserel" OID, "tranrel" OID)
+CREATE FUNCTION  public.get_i18n_trigger_name ("viewname" TEXT)
     RETURNS TEXT
     AS $$
+DECLARE
+    "ident" TEXT[] = parse_ident("viewname");
 BEGIN
-    RETURN (
-        SELECT format('%1I.%2I', n.nspname, 'trigger_i18n_v_' || c.relname)
-        FROM pg_class c JOIN pg_namespace n on c.relnamespace = n.oid
-        WHERE c.oid = "baserel");
+    RETURN format('%1I.%2I', "ident"[1], 'trigger_i18n_' || "ident"[2]);
 END
 $$
 LANGUAGE plpgsql
