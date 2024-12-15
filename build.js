@@ -3,7 +3,7 @@ import * as path from 'path'
 import get_files from './get_files.js'
 
 const files = [
-  ...get_files('./rules'),
+  ...get_files('./domain-check-functions'),
   ...get_files('./domains'),
   ...get_files('./tables'),
   ...get_files('./helpers'),
