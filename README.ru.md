@@ -2,8 +2,11 @@
 
 # pg_i18n
 
-> Расширение позволяет легко и просто создавать мультиязычные базы данных.
+100% работает на PostgreSQL 16 версии, на остальных не проверял.
+Если у вас есть информация, что работает на более ранних версиях
+сообщите мне.
 
+> Расширение позволяет легко и просто создавать мультиязычные базы данных.
 
 # Установка
 
@@ -23,6 +26,7 @@ CREATE EXTENSION "pg_i18n"
     SCHEMA "dictionaries"
     VERSION '2.0';
 ```
+
 [Подробнее про расширение и файл control](https://postgrespro.ru/docs/postgresql/14/extend-extensions)
 
 # Использование
@@ -50,17 +54,17 @@ VALUES ('ru', NULL, NULL, TRUE, 'Русский'),
 -- основная таблица
 CREATE TABLE public."words"
 (
-  "id"       SERIAL PRIMARY KEY,
-  "title"    VARCHAR(255) NOT NULL, -- значение по умолчанию
-  "original" VARCHAR(255)
+    "id"       SERIAL PRIMARY KEY,
+    "title"    VARCHAR(255) NOT NULL, -- значение по умолчанию
+    "original" VARCHAR(255)
 ) INHERITS (public."untrans");
 -- таблица переводов
 CREATE TABLE public."word_trans"
 (
-  "id"    INTEGER NOT NULL REFERENCES public."words" ("id") ON UPDATE CASCADE,
-  PRIMARY KEY ("id", "lang"),
-  "title" VARCHAR(255), -- перевод "title" на язык "lang"
-  "slang" VARCHAR(255)
+    "id"    INTEGER NOT NULL REFERENCES public."words" ("id") ON UPDATE CASCADE,
+    PRIMARY KEY ("id", "lang"),
+    "title" VARCHAR(255), -- перевод "title" на язык "lang"
+    "slang" VARCHAR(255)
 ) INHERITS (public."trans");
 -- создание представления
 CALL create_i18n_view('public.words'::REGCLASS, 'public.word_trans'::REGCLASS);
@@ -258,7 +262,3 @@ INSERT INTO "v_user"
     (id, default_lang, nickname, lang, title)
 VALUES (DEFAULT, 'ru', 'max', 'ru', 'Макс');
 ```
-
-# TODO
-
-- [ ] при изменении колонок в таблице, связанной с i18n представлениями, нужно пересоздавать представления
