@@ -3,30 +3,30 @@ CREATE PROCEDURE public.create_i18n_view("baserel" OID, "tranrel" OID) AS
 $$
 DECLARE
     -- для создания представлений
-    "base_pk_columns"   CONSTANT TEXT[] = public.get_primary_key_columns("baserel");
-    "base_columns"      CONSTANT TEXT[] = public.get_columns("baserel");
-    "tran_pk_columns"   CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
-    "tran_columns"      CONSTANT TEXT[] = public.get_columns("tranrel");
-    "default_view_name" CONSTANT TEXT   = public.get_i18n_default_view_name("baserel", "tranrel");
-    "view_name"         CONSTANT TEXT   = public.get_i18n_view_name("baserel", "tranrel");
+    "base_pk_columns"     CONSTANT TEXT[] = public.get_primary_key_columns("baserel");
+    "base_columns"        CONSTANT TEXT[] = public.get_columns("baserel");
+    "tran_pk_columns"     CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
+    "tran_columns"        CONSTANT TEXT[] = public.get_columns("tranrel");
+    "default_view_name"   CONSTANT TEXT   = public.get_i18n_default_view_name("baserel", "tranrel");
+    "view_name"           CONSTANT TEXT   = public.get_i18n_view_name("baserel", "tranrel");
     -- для создания триггера
     -- same name, одноименные колонки
-    "sn_columns"        CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
+    "sn_columns"          CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
     -- unique, уникальные колонки
-    "un_columns"                 TEXT[];
-    "base_insert_query"          TEXT;
-    "base_default_insert_query"  TEXT;
-    "base_update_query"          TEXT;
-    "tran_insert_query"          TEXT;
-    "tran_default_insert_query"  TEXT;
-    "tran_update_query"          TEXT;
-    "insert_trigger_name"      CONSTANT TEXT   = public.get_i18n_insert_trigger_name("view_name");
-    "update_trigger_name"      CONSTANT TEXT   = public.get_i18n_update_trigger_name("view_name");
+    "un_columns"                   TEXT[];
+    "base_insert_query"            TEXT;
+    "base_default_insert_query"    TEXT;
+    "base_update_query"            TEXT;
+    "tran_insert_query"            TEXT;
+    "tran_default_insert_query"    TEXT;
+    "tran_update_query"            TEXT;
+    "insert_trigger_name" CONSTANT TEXT   = public.get_i18n_insert_trigger_name("view_name");
+    "update_trigger_name" CONSTANT TEXT   = public.get_i18n_update_trigger_name("view_name");
     -- вспомогательные
-    "column"                     TEXT;
-    "columns"                    TEXT[] = '{}';
-    "select"                     TEXT[] = '{}';
-    "query"                      TEXT;
+    "column"                       TEXT;
+    "columns"                      TEXT[] = '{}';
+    "select"                       TEXT[] = '{}';
+    "query"                        TEXT;
 BEGIN
     -- проверка, что pk_columns существуют
     IF ("baserel" IS NULL OR "tranrel" IS NULL) THEN
@@ -135,7 +135,7 @@ BEGIN
             CREATE FUNCTION %1s ()
                 RETURNS TRIGGER
                 AS $trigger$
-            /*pg_i18n:trigger*/
+            /*pg_i18n:insert-trigger*/
             DECLARE
                 "base_new"  RECORD;
                 "tran_new"  RECORD;
@@ -179,7 +179,7 @@ BEGIN
             CREATE FUNCTION %1s ()
                 RETURNS TRIGGER
                 AS $trigger$
-            /*pg_i18n:trigger*/
+            /*pg_i18n:update-trigger*/
             DECLARE
                 "base_new"  RECORD;
                 "tran_new"  RECORD;
