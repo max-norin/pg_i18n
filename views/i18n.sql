@@ -20,7 +20,8 @@ DECLARE
     "tran_insert_query"          TEXT;
     "tran_default_insert_query"  TEXT;
     "tran_update_query"          TEXT;
-    "trigger_name"      CONSTANT TEXT   = public.get_i18n_trigger_name("view_name");
+    "insert_trigger_name"      CONSTANT TEXT   = public.get_i18n_insert_trigger_name("view_name");
+    "update_trigger_name"      CONSTANT TEXT   = public.get_i18n_update_trigger_name("view_name");
     -- вспомогательные
     "column"                     TEXT;
     "columns"                    TEXT[] = '{}';
@@ -160,7 +161,7 @@ BEGIN
             LANGUAGE plpgsql
             VOLATILE
             SECURITY DEFINER;
-        ', "trigger_name",
+        ', "insert_trigger_name",
                    array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1I IS NULL', ' AND '),
                    "base_default_insert_query", "base_insert_query",
                    "base_update_query",
@@ -172,7 +173,51 @@ BEGIN
                 INSTEAD OF INSERT OR UPDATE
                 ON %1s FOR EACH ROW
             EXECUTE FUNCTION %2s ();
-        ', "view_name", "trigger_name");
+        ', "view_name", "insert_trigger_name");
+
+    EXECUTE format('
+            CREATE FUNCTION %1s ()
+                RETURNS TRIGGER
+                AS $trigger$
+            /*pg_i18n:trigger*/
+            DECLARE
+                "base_new"  RECORD;
+                "tran_new"  RECORD;
+            BEGIN
+                IF TG_OP = ''INSERT'' THEN
+                    IF %2s THEN %3s RETURNING * INTO "base_new";
+                    ELSE %4s RETURNING * INTO "base_new"; END IF;
+                ELSE %5s RETURNING * INTO "base_new"; END IF;
+                NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
+
+                IF TG_OP = ''INSERT'' THEN
+                    IF NEW.lang IS NULL THEN %6s RETURNING * INTO "tran_new";
+                    ELSE %7s RETURNING * INTO "tran_new"; END IF;
+                ELSE %8s RETURNING * INTO "tran_new"; END IF;
+                NEW = jsonb_populate_record(NEW, to_jsonb("tran_new"));
+
+                NEW.is_tran = TRUE;
+                NEW.is_default_lang = (NEW."default_lang" = NEW."lang") IS TRUE;
+
+                RETURN NEW;
+            END
+            $trigger$
+            LANGUAGE plpgsql
+            VOLATILE
+            SECURITY DEFINER;
+        ', "update_trigger_name",
+                   array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1I IS NULL', ' AND '),
+                   "base_default_insert_query", "base_insert_query",
+                   "base_update_query",
+                   "tran_default_insert_query", "tran_insert_query",
+                   "tran_update_query");
+
+    EXECUTE format('
+            CREATE TRIGGER "update"
+                INSTEAD OF UPDATE
+                ON %1s FOR EACH ROW
+            EXECUTE FUNCTION %2s ();
+        ', "view_name", "update_trigger_name");
 END
 $$
     LANGUAGE plpgsql;
