@@ -1,3 +1,9 @@
+-- Ввиду
+-- - отсутствия написания корректного запроса в `RETURNING`
+-- - использования запроса UPDATE + INSERT, вместо `INSERT INTO ... ON CONFLICT`
+-- - отсутствия обновления NEW после вставки в 1 таблицу `dictionaries.sexes`
+-- отказываюсь от варианта использовать RULE
+
 -- лучший вариант
 -- Так как нельзя использовать `NEW` в предложении `ON CONFLICT ON CONSTRAINT "sexes_pkey" DO UPDATE`, то
 -- приходится делать сначала обновление данных `UPDATE dictionaries.sexes`,
