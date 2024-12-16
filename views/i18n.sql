@@ -1,5 +1,5 @@
 -- создание представления c возможность редактирования
-CREATE PROCEDURE public.create_i18n_view("baserel" OID, "tranrel" OID) AS
+CREATE OR REPLACE PROCEDURE public.create_i18n_view("baserel" OID, "tranrel" OID) AS
 $$
 DECLARE
     -- для создания представлений
@@ -132,7 +132,7 @@ BEGIN
                                  array_to_string("tran_pk_columns", ','), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ','));
 
     EXECUTE format('
-            CREATE FUNCTION %1s ()
+            CREATE FUNCTION %s ()
                 RETURNS TRIGGER
                 AS $trigger$
             /*pg_i18n:insert-trigger*/
@@ -140,20 +140,13 @@ BEGIN
                 "base_new"  RECORD;
                 "tran_new"  RECORD;
             BEGIN
-                IF TG_OP = ''INSERT'' THEN
-                    IF %2s THEN %3s RETURNING * INTO "base_new";
-                    ELSE %4s RETURNING * INTO "base_new"; END IF;
-                ELSE %5s RETURNING * INTO "base_new"; END IF;
+                IF %s THEN %s RETURNING * INTO "base_new";
+                ELSE %s RETURNING * INTO "base_new"; END IF;
+                IF NEW.lang IS NULL THEN %s RETURNING * INTO "tran_new";
+                ELSE %s RETURNING * INTO "tran_new"; END IF;
+
                 NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
-
-                IF TG_OP = ''INSERT'' THEN
-                    IF NEW.lang IS NULL THEN %6s RETURNING * INTO "tran_new";
-                    ELSE %7s RETURNING * INTO "tran_new"; END IF;
-                ELSE %8s RETURNING * INTO "tran_new"; END IF;
                 NEW = jsonb_populate_record(NEW, to_jsonb("tran_new"));
-
-                NEW.is_tran = TRUE;
-                NEW.is_default_lang = (NEW."default_lang" = NEW."lang") IS TRUE;
 
                 RETURN NEW;
             END
@@ -164,19 +157,16 @@ BEGIN
         ', "insert_trigger_name",
                    array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1I IS NULL', ' AND '),
                    "base_default_insert_query", "base_insert_query",
-                   "base_update_query",
-                   "tran_default_insert_query", "tran_insert_query",
-                   "tran_update_query");
-
+                   "tran_default_insert_query", "tran_insert_query");
     EXECUTE format('
             CREATE TRIGGER "i18n"
-                INSTEAD OF INSERT OR UPDATE
+                INSTEAD OF INSERT
                 ON %1s FOR EACH ROW
             EXECUTE FUNCTION %2s ();
         ', "view_name", "insert_trigger_name");
 
     EXECUTE format('
-            CREATE FUNCTION %1s ()
+            CREATE FUNCTION %s ()
                 RETURNS TRIGGER
                 AS $trigger$
             /*pg_i18n:update-trigger*/
@@ -184,20 +174,11 @@ BEGIN
                 "base_new"  RECORD;
                 "tran_new"  RECORD;
             BEGIN
-                IF TG_OP = ''INSERT'' THEN
-                    IF %2s THEN %3s RETURNING * INTO "base_new";
-                    ELSE %4s RETURNING * INTO "base_new"; END IF;
-                ELSE %5s RETURNING * INTO "base_new"; END IF;
+                %s RETURNING * INTO "base_new";
+                %s RETURNING * INTO "tran_new";
+
                 NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
-
-                IF TG_OP = ''INSERT'' THEN
-                    IF NEW.lang IS NULL THEN %6s RETURNING * INTO "tran_new";
-                    ELSE %7s RETURNING * INTO "tran_new"; END IF;
-                ELSE %8s RETURNING * INTO "tran_new"; END IF;
                 NEW = jsonb_populate_record(NEW, to_jsonb("tran_new"));
-
-                NEW.is_tran = TRUE;
-                NEW.is_default_lang = (NEW."default_lang" = NEW."lang") IS TRUE;
 
                 RETURN NEW;
             END
@@ -206,12 +187,8 @@ BEGIN
             VOLATILE
             SECURITY DEFINER;
         ', "update_trigger_name",
-                   array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1I IS NULL', ' AND '),
-                   "base_default_insert_query", "base_insert_query",
                    "base_update_query",
-                   "tran_default_insert_query", "tran_insert_query",
                    "tran_update_query");
-
     EXECUTE format('
             CREATE TRIGGER "update"
                 INSTEAD OF UPDATE
