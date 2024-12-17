@@ -17,6 +17,7 @@ DECLARE
     "base_insert_query"            TEXT;
     "base_default_insert_query"    TEXT;
     "base_update_query"            TEXT;
+    "tran_new_query"               TEXT;
     "tran_insert_query"            TEXT;
     "tran_default_insert_query"    TEXT;
     "tran_update_query"            TEXT;
@@ -116,19 +117,22 @@ BEGIN
     -- set secondary key
     "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "tran_pk_columns";
 
+    "tran_new_query" = array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'TRAN_NEW.%1$I = NEW.%1$I;', '
+    ');
+
     "columns" = "tran_pk_columns" || "un_columns";
     "tran_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("columns", ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '));
+                                 array_to_string("columns", ', '), array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '));
     "columns" = "base_pk_columns" || "un_columns";
     "tran_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
                                          "tranrel"::REGCLASS,
-                                         array_to_string('{lang}'::TEXT[] || "columns", ', '), array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'NEW.%I'), ', '));
+                                         array_to_string('{lang}'::TEXT[] || "columns", ', '), array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I'), ', '));
 
     "columns" = "tran_pk_columns" || "un_columns";
     "tran_update_query" = format('UPDATE %1I SET (%2s) = ROW (%3s) WHERE (%4s) = (%5s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("columns", ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '),
+                                 array_to_string("columns", ', '), array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '),
                                  array_to_string("tran_pk_columns", ', '), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
 
     EXECUTE format('
@@ -139,7 +143,7 @@ CREATE FUNCTION %1$s ()
 DECLARE
     base     RECORD;
     tran     RECORD;
-    tran_new RECORD = NEW;
+    TRAN_NEW RECORD = NEW;
     result   RECORD;
 BEGIN
     -- untrans
@@ -151,12 +155,13 @@ BEGIN
         %4$s RETURNING * INTO base;
     END IF;
     -- trans
+    %5$s
     IF NEW.lang IS NULL THEN
-        RAISE DEBUG USING MESSAGE = ''%5$s'';
-        %5$s RETURNING * INTO tran;
-    ELSE
         RAISE DEBUG USING MESSAGE = ''%6$s'';
         %6$s RETURNING * INTO tran;
+    ELSE
+        RAISE DEBUG USING MESSAGE = ''%7$s'';
+        %7$s RETURNING * INTO tran;
     END IF;
     -- update NEW
     result = jsonb_populate_record(NEW, to_jsonb(base) || to_jsonb(tran));
@@ -172,6 +177,7 @@ SECURITY DEFINER;
         ', "insert_trigger_name",
                    array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1I IS NULL', ' AND '),
                    "base_default_insert_query", "base_insert_query",
+                   "tran_new_query",
                    "tran_default_insert_query", "tran_insert_query");
     EXECUTE format('
             CREATE TRIGGER "i18n"
@@ -188,19 +194,20 @@ CREATE FUNCTION %1$s ()
 DECLARE
     base     RECORD;
     tran     RECORD;
-    tran_new RECORD;
+    TRAN_NEW RECORD = NEW;
     result   RECORD;
 BEGIN
     -- untrans
     RAISE DEBUG USING MESSAGE = ''%2$s'';
     %2$s RETURNING * INTO base;
     -- trans
+    %3$s
     IF OLD.is_tran THEN
-        RAISE DEBUG USING MESSAGE = ''%3$s'';
-        %3$s RETURNING * INTO tran;
-    ELSE
         RAISE DEBUG USING MESSAGE = ''%4$s'';
         %4$s RETURNING * INTO tran;
+    ELSE
+        RAISE DEBUG USING MESSAGE = ''%5$s'';
+        %5$s RETURNING * INTO tran;
     END IF;
     -- update NEW
     result = jsonb_populate_record(NEW, to_jsonb(base) || to_jsonb(tran));
@@ -215,8 +222,8 @@ VOLATILE
 SECURITY DEFINER;
         ', "update_trigger_name",
                    "base_update_query",
-                   "tran_update_query",
-                   "tran_insert_query");
+                   "tran_new_query",
+                   "tran_update_query", "tran_insert_query");
     EXECUTE format('
             CREATE TRIGGER "update"
                 INSTEAD OF UPDATE
