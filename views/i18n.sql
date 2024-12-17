@@ -106,7 +106,7 @@ BEGIN
                                          array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || ("columns" OPERATOR ( public.<< ) 'NEW.%I'), ', '));
 
     "columns" = "base_pk_columns" || "un_columns";
-    "base_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s) = (%5s)',
+    "base_update_query" = format('UPDATE %1I SET (%2s) = ROW (%3s) WHERE (%4s) = (%5s)',
                                  "baserel"::REGCLASS,
                                  array_to_string("columns", ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '),
                                  array_to_string("base_pk_columns", ', '), array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
@@ -126,7 +126,7 @@ BEGIN
                                          array_to_string('{lang}'::TEXT[] || "columns", ', '), array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'NEW.%I'), ', '));
 
     "columns" = "tran_pk_columns" || "un_columns";
-    "tran_update_query" = format('UPDATE %1I SET (%2s) = ROW(%3s) WHERE (%4s) = (%5s)',
+    "tran_update_query" = format('UPDATE %1I SET (%2s) = ROW (%3s) WHERE (%4s) = (%5s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("columns", ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '),
                                  array_to_string("tran_pk_columns", ', '), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
@@ -137,26 +137,28 @@ CREATE FUNCTION %s ()
     AS $trigger$
 /*pg_i18n:insert-trigger*/
 DECLARE
-    "base_new"  RECORD;
-    "tran_new"  RECORD;
+    base_new RECORD;
+    tran_new RECORD;
+    result   RECORD;
 BEGIN
     -- untrans
     IF %s THEN
-        %s RETURNING * INTO "base_new";
+        %s RETURNING * INTO base_new;
     ELSE
-        %s RETURNING * INTO "base_new";
+        %s RETURNING * INTO base_new;
     END IF;
     -- trans
     IF NEW.lang IS NULL THEN
-        %s RETURNING * INTO "tran_new";
+        %s RETURNING * INTO tran_new;
     ELSE
-        %s RETURNING * INTO "tran_new";
+        %s RETURNING * INTO tran_new;
     END IF;
+    -- update NEW
+    result = jsonb_populate_record(NEW, to_jsonb(base_new) || to_jsonb(tran_new));
+    result.is_tran = TRUE;
+    result.is_default_lang = (NEW.default_lang = NEW.lang) IS TRUE;
 
-    NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
-    NEW = jsonb_populate_record(NEW, to_jsonb("tran_new"));
-
-    RETURN NEW;
+    RETURN result;
 END
 $trigger$
 LANGUAGE plpgsql
@@ -179,20 +181,22 @@ CREATE FUNCTION %s ()
     AS $trigger$
 /*pg_i18n:update-trigger*/
 DECLARE
-    "base_new"  RECORD;
-    "tran_new"  RECORD;
+    base_new RECORD;
+    tran_new RECORD;
+    result   RECORD;
 BEGIN
     -- untrans
-    %s RETURNING * INTO "base_new";
+    %s RETURNING * INTO base_new;
     -- trans
     IF OLD.is_tran THEN
-        %s RETURNING * INTO "tran_new";
+        %s RETURNING * INTO tran_new;
     ELSE
-        %s RETURNING * INTO "tran_new";
+        %s RETURNING * INTO tran_new;
     END IF;
-
-    NEW = jsonb_populate_record(NEW, to_jsonb("base_new"));
-    NEW = jsonb_populate_record(NEW, to_jsonb("tran_new"));
+    -- update NEW
+    result = jsonb_populate_record(NEW, to_jsonb(base_new) || to_jsonb(tran_new));
+    result.is_tran = TRUE;
+    result.is_default_lang = (NEW.default_lang = NEW.lang) IS TRUE;
 
     RETURN NEW;
 END
