@@ -137,30 +137,31 @@ CREATE FUNCTION %1$s ()
     AS $trigger$
 /*pg_i18n:insert-trigger*/
 DECLARE
-    base_new RECORD;
-    tran_new RECORD;
+    base     RECORD;
+    tran     RECORD;
+    tran_new RECORD = NEW;
     result   RECORD;
 BEGIN
     -- untrans
     IF %2$s THEN
         RAISE DEBUG USING MESSAGE = ''%3$s'';
-        %3$s RETURNING * INTO base_new;
+        %3$s RETURNING * INTO base;
     ELSE
         RAISE DEBUG USING MESSAGE = ''%4$s'';
-        %4$s RETURNING * INTO base_new;
+        %4$s RETURNING * INTO base;
     END IF;
     -- trans
     IF NEW.lang IS NULL THEN
         RAISE DEBUG USING MESSAGE = ''%5$s'';
-        %5$s RETURNING * INTO tran_new;
+        %5$s RETURNING * INTO tran;
     ELSE
         RAISE DEBUG USING MESSAGE = ''%6$s'';
-        %6$s RETURNING * INTO tran_new;
+        %6$s RETURNING * INTO tran;
     END IF;
     -- update NEW
-    result = jsonb_populate_record(NEW, to_jsonb(base_new) || to_jsonb(tran_new));
+    result = jsonb_populate_record(NEW, to_jsonb(base) || to_jsonb(tran));
     result.is_tran = TRUE;
-    result.is_default_lang = (NEW.default_lang = NEW.lang) IS TRUE;
+    result.is_default_lang = (result.default_lang = result.lang) IS TRUE;
 
     RETURN result;
 END
@@ -185,25 +186,26 @@ CREATE FUNCTION %1$s ()
     AS $trigger$
 /*pg_i18n:update-trigger*/
 DECLARE
-    base_new RECORD;
+    base     RECORD;
+    tran     RECORD;
     tran_new RECORD;
     result   RECORD;
 BEGIN
     -- untrans
     RAISE DEBUG USING MESSAGE = ''%2$s'';
-    %2$s RETURNING * INTO base_new;
+    %2$s RETURNING * INTO base;
     -- trans
     IF OLD.is_tran THEN
         RAISE DEBUG USING MESSAGE = ''%3$s'';
-        %3$s RETURNING * INTO tran_new;
+        %3$s RETURNING * INTO tran;
     ELSE
         RAISE DEBUG USING MESSAGE = ''%4$s'';
-        %4$s RETURNING * INTO tran_new;
+        %4$s RETURNING * INTO tran;
     END IF;
     -- update NEW
-    result = jsonb_populate_record(NEW, to_jsonb(base_new) || to_jsonb(tran_new));
+    result = jsonb_populate_record(NEW, to_jsonb(base) || to_jsonb(tran));
     result.is_tran = TRUE;
-    result.is_default_lang = (NEW.default_lang = NEW.lang) IS TRUE;
+    result.is_default_lang = (result.default_lang = result.lang) IS TRUE;
 
     RETURN NEW;
 END
