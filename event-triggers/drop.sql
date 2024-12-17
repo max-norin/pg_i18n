@@ -20,10 +20,15 @@ BEGIN
             "table" = "object".address_names[2];
             -- получение названия удалённого представления
             "rel" = format('%1I.%2I', "schema", "table");
-            -- получение названия удаляемого триггера
-            "name" = public.get_i18n_trigger_name ("rel");
-            RAISE NOTICE USING MESSAGE = "name";
 
+            -- получение названия удаляемого триггера insert
+            "name" = public.get_i18n_insert_trigger_name ("rel");
+            "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
+            RAISE NOTICE USING MESSAGE = "query";
+            EXECUTE "query";
+
+            -- получение названия удаляемого триггера
+            "name" = public.get_i18n_update_trigger_name ("rel");
             "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
             RAISE NOTICE USING MESSAGE = "query";
             EXECUTE "query";
