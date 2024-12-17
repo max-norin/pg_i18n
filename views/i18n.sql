@@ -164,7 +164,7 @@ BEGIN
         %7$s RETURNING * INTO tran;
     END IF;
     -- update NEW
-    result = jsonb_populate_record(NEW, to_jsonb(base) || to_jsonb(tran));
+    result = jsonb_populate_record(NULL::%8$s, to_jsonb(base) || to_jsonb(tran));
     result.is_tran = TRUE;
     result.is_default_lang = (result.default_lang = result.lang) IS TRUE;
 
@@ -178,7 +178,8 @@ SECURITY DEFINER;
                    array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1I IS NULL', ' AND '),
                    "base_default_insert_query", "base_insert_query",
                    "tran_new_query",
-                   "tran_default_insert_query", "tran_insert_query");
+                   "tran_default_insert_query", "tran_insert_query",
+                   "view_name");
     EXECUTE format('
             CREATE TRIGGER "i18n"
                 INSTEAD OF INSERT
@@ -210,7 +211,7 @@ BEGIN
         %5$s RETURNING * INTO tran;
     END IF;
     -- update NEW
-    result = jsonb_populate_record(NEW, to_jsonb(base) || to_jsonb(tran));
+    result = jsonb_populate_record(NULL::%6$s, to_jsonb(base) || to_jsonb(tran));
     result.is_tran = TRUE;
     result.is_default_lang = (result.default_lang = result.lang) IS TRUE;
 
@@ -223,7 +224,8 @@ SECURITY DEFINER;
         ', "update_trigger_name",
                    "base_update_query",
                    "tran_new_query",
-                   "tran_update_query", "tran_insert_query");
+                   "tran_update_query", "tran_insert_query",
+                   "view_name");
     EXECUTE format('
             CREATE TRIGGER "update"
                 INSTEAD OF UPDATE
