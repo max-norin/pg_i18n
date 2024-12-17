@@ -132,7 +132,7 @@ BEGIN
                                  array_to_string("tran_pk_columns", ', '), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
 
     EXECUTE format('
-CREATE FUNCTION %s ()
+CREATE FUNCTION %1$s ()
     RETURNS TRIGGER
     AS $trigger$
 /*pg_i18n:insert-trigger*/
@@ -142,16 +142,20 @@ DECLARE
     result   RECORD;
 BEGIN
     -- untrans
-    IF %s THEN
-        %s RETURNING * INTO base_new;
+    IF %2$s THEN
+        RAISE DEBUG USING MESSAGE = ''%3$s'';
+        %3$s RETURNING * INTO base_new;
     ELSE
-        %s RETURNING * INTO base_new;
+        RAISE DEBUG USING MESSAGE = ''%4$s'';
+        %4$s RETURNING * INTO base_new;
     END IF;
     -- trans
     IF NEW.lang IS NULL THEN
-        %s RETURNING * INTO tran_new;
+        RAISE DEBUG USING MESSAGE = ''%5$s'';
+        %5$s RETURNING * INTO tran_new;
     ELSE
-        %s RETURNING * INTO tran_new;
+        RAISE DEBUG USING MESSAGE = ''%6$s'';
+        %6$s RETURNING * INTO tran_new;
     END IF;
     -- update NEW
     result = jsonb_populate_record(NEW, to_jsonb(base_new) || to_jsonb(tran_new));
@@ -176,7 +180,7 @@ SECURITY DEFINER;
         ', "view_name", "insert_trigger_name");
 
     EXECUTE format('
-CREATE FUNCTION %s ()
+CREATE FUNCTION %1$s ()
     RETURNS TRIGGER
     AS $trigger$
 /*pg_i18n:update-trigger*/
@@ -186,12 +190,15 @@ DECLARE
     result   RECORD;
 BEGIN
     -- untrans
-    %s RETURNING * INTO base_new;
+    RAISE DEBUG USING MESSAGE = ''%2$s'';
+    %2$s RETURNING * INTO base_new;
     -- trans
     IF OLD.is_tran THEN
-        %s RETURNING * INTO tran_new;
+        RAISE DEBUG USING MESSAGE = ''%3$s'';
+        %3$s RETURNING * INTO tran_new;
     ELSE
-        %s RETURNING * INTO tran_new;
+        RAISE DEBUG USING MESSAGE = ''%4$s'';
+        %4$s RETURNING * INTO tran_new;
     END IF;
     -- update NEW
     result = jsonb_populate_record(NEW, to_jsonb(base_new) || to_jsonb(tran_new));
