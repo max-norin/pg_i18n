@@ -63,5 +63,12 @@
 # Проверки
 
 - [ ] протестировать на больших данные и нагрузке запросами
-- [ ] протестировать c таблицами v_words и v_product
+- [ ] протестировать c таблицами i18n_words и i18n_product
+    - [ ] `INSERT` вставить `id=1&lang=ru` (ok), `id=1&lang=en` (error), `id=default&lang=en` (ok)
+    - [ ] `INSERT` только в таблицу `untans` - посмотреть, как будет проходить `UPDATE` в `i18n`
+    - [ ] `UPDATE` обновить `id=1&lang=ru` (ok), в таблице `trans` нет этой записи `id=1&lang=en` (ok)
+    - [ ] `UPDATE` обновить pk `id=2 where id=1`
+    - [ ] `UPDATE` обновить в `i18n` одноименную колонку таблиц `untrans` и `trans`
+    - [ ] `UPDATE` обновить в `i18n` колонку принадлежащую только `untrans`
+    - [ ] `UPDATE` обновить в `i18n` колонку принадлежащую только `trans`
 
