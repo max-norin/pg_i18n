@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION public.event_trigger_drop_i18n_triggers ()
     RETURNS EVENT_TRIGGER
-AS $$
+    AS $$
 DECLARE
     "object"               RECORD;
     "rel"                  TEXT;
