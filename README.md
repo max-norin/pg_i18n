@@ -7,8 +7,6 @@ If you have any information that works on earlier versions, please let me know.
 
 [README in Russian](./README.ru.md)
 
-## Getting Started
-
 # Install
 
 Download the files from [dist](./dist) to your `extension` folder PostgreSQL and run the following
@@ -40,6 +38,7 @@ table with data. For example:
 INSERT INTO "dictionaries"."langs"("language", "script", "region", "is_active", "title")
 VALUES ('ru', NULL, NULL, TRUE, 'Русский'),
        ('udm', NULL, NULL, TRUE, 'Удмурт'),
+       ('it', NULL, NULL, TRUE, 'Удмурт'),
        ('en', NULL, 'US', TRUE, 'English');
 
 ```
@@ -170,95 +169,4 @@ After that, there will be a correct use of the index specified above.
 ```postgresql
 CREATE TEXT SEARCH CONFIGURATION public."ru" ( COPY = pg_catalog.russian );
 CREATE TEXT SEARCH CONFIGURATION public."en-US" ( COPY = pg_catalog.english );
-```
-
-## Recommended use
-
-When using a _User way_ to create a table, a situation may arise when there is basic
-information, but there is no translated information. This is not proper storage.
-Therefore, I suggest using two roles: administrator and user.
-The user will be allowed to insert data through the view, but not directly into the main table.
-
-To implement this approach, trigger functions run on behalf of the function creator.
-This poses a data security risk,
-to prevent anyone else from using these features, we will block access to them.
-
-```postgresql
--- prevents everyone from executing the current functions in SCHEMA "dictionaries" 
-REVOKE ALL ON ALL ROUTINES IN SCHEMA "dictionaries" FROM PUBLIC;
--- prevents everyone from executing future defined functions in SCHEMA "dictionaries" 
-ALTER DEFAULT PRIVILEGES IN SCHEMA "dictionaries" REVOKE ALL ON ROUTINES FROM PUBLIC;
-```
-
-```postgresql
--- fill in the table with language tags
-INSERT INTO "langs"("language", "script", "region", "is_active", "title")
-VALUES ('ru', NULL, NULL, TRUE, 'Русский'),
-       ('udm', NULL, NULL, TRUE, 'Удмурт'),
-       ('en', NULL, 'US', TRUE, 'English');
--- user table with basic information
-CREATE TABLE "user"
-(
-    "id"       SERIAL PRIMARY KEY,
-    "nickname" VARCHAR(100) NOT NULL UNIQUE
-) INHERITS ("lang_base");
--- table of users with translated information
-CREATE TABLE "user_trans"
-(
-    "id"    BIGINT NOT NULL REFERENCES "user" ("id") ON UPDATE CASCADE,
-    "title" VARCHAR(255),
-    PRIMARY KEY ("id", "lang")
-) INHERITS ("lang_base_tran");
--- a view with a join of the above two tables
-CALL create_user_view(NULL::TEXT, '"user"'::REGCLASS, '"user_trans"'::REGCLASS);
-```
-
-```postgresql
-CREATE ROLE "test_i18n" LOGIN;
-GRANT CONNECT ON DATABASE "postgres" TO "test_i18n";
-GRANT USAGE ON SCHEMA "dictionaries" TO "test_i18n";
--- define the necessary safe functions, they are needed to fire the INSTEAD OF triggers, 
--- because they convert the input types (for OLD and NEW) to the desired type
-GRANT ALL ON FUNCTION dictionaries.language(TEXT) TO "test_i18n";
-GRANT ALL ON FUNCTION dictionaries.script(TEXT) TO "test_i18n";
-GRANT ALL ON FUNCTION dictionaries.region(TEXT) TO "test_i18n";
-GRANT ALL ON FUNCTION dictionaries.lang(TEXT) TO "test_i18n";
---
-ALTER ROLE "test_i18n" SET search_path TO "public", "dictionaries";
--- give access rights to the user
--- the key point is the impossibility of inserting into the "user"
--- insertion into the view is possible only thanks 
--- to the SECURITY DEFINER in the definition of trigger functions
-GRANT SELECT ON TABLE "langs" TO "test_i18n";
-GRANT INSERT, UPDATE, SELECT ON TABLE "v_user" TO "test_i18n";
-GRANT UPDATE, SELECT ON TABLE "user" TO "test_i18n";
-GRANT INSERT, UPDATE, SELECT ON TABLE "user_trans" TO "test_i18n";
-```
-
-Change current user to new user or connect to database using new user.
-
-```postgresql
-SET ROLE "text_i18n";
-```
-
-Function availability check.
-
-```postgresql
-SELECT dictionaries.get_primary_key('dictionaries.langs'::REGCLASS);
-```
-
-Let's try to insert `"user"` into the table get error.
-
-```postgresql
-INSERT INTO "user"
-    (id, default_lang, nickname)
-VALUES (DEFAULT, 'ru', 'max');    
-```
-
-Let's try to insert `"v_user"` into the view get success.
-
-```postgresql
-INSERT INTO "v_user"
-    (id, default_lang, nickname, lang, title)
-VALUES (DEFAULT, 'ru', 'max', 'ru', 'Макс');
 ```
