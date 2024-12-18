@@ -139,7 +139,7 @@ BEGIN
 CREATE FUNCTION %1$s ()
     RETURNS TRIGGER
     AS $trigger$
-/*pg_i18n:insert-trigger*/
+/* pg_i18n:insert-trigger */
 DECLARE
     base     RECORD;
     tran     RECORD;
@@ -191,7 +191,7 @@ SECURITY DEFINER;
 CREATE FUNCTION %1$s ()
     RETURNS TRIGGER
     AS $trigger$
-/*pg_i18n:update-trigger*/
+/* pg_i18n:update-trigger */
 DECLARE
     base     RECORD;
     tran     RECORD;

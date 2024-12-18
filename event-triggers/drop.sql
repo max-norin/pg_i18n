@@ -1,4 +1,4 @@
-CREATE FUNCTION public.event_trigger_drop_i18n_triggers ()
+CREATE OR REPLACE FUNCTION public.event_trigger_drop_i18n_triggers ()
     RETURNS EVENT_TRIGGER
 AS $$
 DECLARE
@@ -23,15 +23,19 @@ BEGIN
 
             -- получение названия удаляемого триггера insert
             "name" = public.get_i18n_insert_trigger_name ("rel");
-            "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
-            RAISE NOTICE USING MESSAGE = "query";
-            EXECUTE "query";
+            IF (position('/* pg_i18n:insert-trigger */' IN lower(pg_get_functiondef(to_regproc("name"))))) > 0 THEN
+                "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
+                RAISE NOTICE USING MESSAGE = "query";
+                EXECUTE "query";
+            END IF;
 
             -- получение названия удаляемого триггера
             "name" = public.get_i18n_update_trigger_name ("rel");
-            "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
-            RAISE NOTICE USING MESSAGE = "query";
-            EXECUTE "query";
+            IF (position('/* pg_i18n:update-trigger */' IN lower(pg_get_functiondef(to_regproc("name"))))) > 0 THEN
+                "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
+                RAISE NOTICE USING MESSAGE = "query";
+                EXECUTE "query";
+            END IF;
         END IF;
     END LOOP;
 END;
