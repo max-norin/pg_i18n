@@ -1,5 +1,8 @@
 # pg_i18n
 
+100% works on PostgreSQL version 16, I didn't check the rest.
+If you have any information that works on earlier versions, please let me know.
+
 > The extension allows you to easily create multilingual databases.
 
 [README in Russian](./README.ru.md)
@@ -49,24 +52,24 @@ The `create_i18n_view` procedure will create a view in which, in each language t
 provided with a translation if it is in the translation table, else a default value.
 Data in views can update.
 
-Important condition: in the translation table, the column pointing to the foreign key to the main table 
+Important condition: in the translation table, the column pointing to the foreign key to the main table
 had the same name as the column specified as `PRIMARY KEY` in the main table.
 
 ```postgresql
 -- main table
 CREATE TABLE public."words"
 (
-  "id"       SERIAL PRIMARY KEY,
-  "title"    VARCHAR(255) NOT NULL, -- default value
-  "original" VARCHAR(255)
+    "id"       SERIAL PRIMARY KEY,
+    "title"    VARCHAR(255) NOT NULL, -- default value
+    "original" VARCHAR(255)
 ) INHERITS (public."untrans");
 -- translation table
 CREATE TABLE public."word_trans"
 (
-  "id"    INTEGER NOT NULL REFERENCES public."words" ("id") ON UPDATE CASCADE,
-  PRIMARY KEY ("id", "lang"),
-  "title" VARCHAR(255), -- translation of "title" into language "lang"
-  "slang" VARCHAR(255)
+    "id"    INTEGER NOT NULL REFERENCES public."words" ("id") ON UPDATE CASCADE,
+    PRIMARY KEY ("id", "lang"),
+    "title" VARCHAR(255), -- translation of "title" into language "lang"
+    "slang" VARCHAR(255)
 ) INHERITS (public."trans");
 -- создание представления
 CALL create_i18n_view('public.words'::REGCLASS, 'public.word_trans'::REGCLASS);
