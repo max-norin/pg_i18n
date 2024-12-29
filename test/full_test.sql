@@ -119,6 +119,7 @@ RETURNING *;
 
 -- # DROP
 
+-- 1.
 -- ok
 DROP VIEW public.i18n_words;
 -- error / not exists
@@ -127,3 +128,14 @@ DROP FUNCTION public.i18n_words__insert();
 DROP FUNCTION public.i18n_words__update();
 -- ok
 DROP VIEW public.i18n_default_words;
+-- 2.
+-- create i18n_words
+CALL create_i18n_view('public.words'::REGCLASS, 'public.word_trans'::REGCLASS);
+-- ok
+DROP TABLE public.words CASCADE;
+-- error / not exists
+DROP FUNCTION public.i18n_words__insert();
+-- error / not exists
+DROP FUNCTION public.i18n_words__update();
+-- ok
+DROP TABLE public.word_trans CASCADE;

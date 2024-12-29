@@ -113,5 +113,6 @@
     - [x] `UPDATE` обновить колонку принадлежащую только `trans` (ok)
     - [x] `UPDATE` обновить не редактируемые колонки `is_tran`, `is_default_lang`
     - [x] `DROP` удалить `i18n` (ok), `i18n_defualt` (ok), `i18n__insert` (error), `i18n__update` (error)
+    - [x] `DROP` удалить `trans` (ok), `untrans` (ok), `i18n__insert` (error), `i18n__update` (error)
 - [ ] проверить работу `EVENT_TRIGGER`
 
