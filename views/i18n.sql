@@ -123,11 +123,13 @@ BEGIN
     "columns" = "tran_pk_columns" || "un_columns";
     "tran_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '));
+                                 array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '),
+                                 array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '));
     "columns" = "base_pk_columns" || "un_columns";
     "tran_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                          "tranrel"::REGCLASS,
-                                         array_to_string(('{lang}'::TEXT[] || "columns") OPERATOR ( public.<< ) '%I', ', '), array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I'), ', '));
+                                         array_to_string(('{lang}'::TEXT[] || "columns") OPERATOR ( public.<< ) '%I', ', '),
+                                         array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I'), ', '));
 
     "columns" = "tran_pk_columns" || "un_columns";
     "tran_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
