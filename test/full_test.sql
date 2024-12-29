@@ -42,6 +42,12 @@ RETURNING *;
 INSERT INTO public.i18n_words (is_tran, is_default_lang, lang, id, default_lang, original, title, description)
 VALUES (NULL, NULL, 'it', 100, NULL, 'te /it', 'tè', 'le foglie opportunamente trattate della pianta')
 RETURNING *;
+-- ok / INSERT `untans`
+INSERT INTO public.word_trans (lang, id, title, description)
+VALUES ('it', 100, 'tè', 'le foglie opportunamente trattate della pianta')
+RETURNING *;
+SELECT *
+FROM public.i18n_words;
 
 
 -- # UPDATE
