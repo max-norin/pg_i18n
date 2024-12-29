@@ -90,8 +90,12 @@
 # Проверки
 
 - [ ] протестировать на больших данные и нагрузке запросами
+- [ ] проверить вставку в таблицу `langs`
 - [ ] написать файл с тестированием таблицами i18n_words и i18n_product
-    - [ ] `INSERT` вставить `id=1&lang=ru` (ok), `id=1&lang=ru` (error), `id=1&lang=en` (error), `id=default&lang=en` (ok)
+    - [x] `INSERT` вставить языки в таблицу `langs` (ok)
+    - [x] `CREATE` создать представление `i18n` (ok)
+    - [x] `CREATE` создать представление `i18n` с пустыми `relid` (error)
+    - [x] `INSERT` вставить `id=1&lang=ru` (ok), `id=1&lang=ru` (error), `id=1&lang=en` (error), `id=default&lang=en` (ok)
     - [ ] `INSERT` только в таблицу `untans` - посмотреть, как будет проходить `UPDATE` в `i18n` (ok)
     - [ ] `UPDATE` обновить запись, где `id=-1`, при этом такого `id` не должно существовать (error)
     - [ ] `UPDATE` обновить запись, где `id=1` - должны обновиться все переводы (ok)
@@ -105,5 +109,6 @@
     - [ ] `UPDATE` обновить в `i18n` одноименную колонку таблиц `untrans` и `trans`
     - [ ] `UPDATE` обновить в `i18n` колонку принадлежащую только `untrans`
     - [ ] `UPDATE` обновить в `i18n` колонку принадлежащую только `trans`
+    - [x] `DROP` удалить `i18n` (ok), `i18n_defualt` (ok), `i18n__insert` (error), `i18n__update` (error)
 - [ ] проверить работу `EVENT_TRIGGER`
 
