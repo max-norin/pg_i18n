@@ -198,6 +198,7 @@ DECLARE
     TRAN_NEW RECORD = NEW;
     result   RECORD;
 BEGIN
+    IF OLD.lang != NEW.lang THEN RAISE EXCEPTION USING MESSAGE = ''Updating `lang` is not allowed.'', HINT = ''Remove change to column `lang` in query.''; END IF;
     -- untrans
     RAISE DEBUG USING MESSAGE = ''%2$s'';
     %2$s RETURNING * INTO base;
