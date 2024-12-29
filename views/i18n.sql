@@ -117,7 +117,7 @@ BEGIN
     -- set secondary key
     "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "tran_pk_columns";
 
-    "tran_new_query" = array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'TRAN_NEW.%1$I = NEW.%1$I;', '
+    "tran_new_query" = array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'TRAN_NEW.%1$I = base.%1$I;', '
     ');
 
     "columns" = "tran_pk_columns" || "un_columns";
