@@ -43,7 +43,7 @@ BEGIN
 
     -- установка массива select
     -- добавление колонок базовой таблицы, включая первичные ключи, но без одноименных колонок таблицы переводов
-    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'b.%1I';
+    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'b.%1$I';
     -- добавление колонок из таблицы переводов
     FOREACH "column" IN ARRAY "tran_columns" OPERATOR ( public.- ) "tran_pk_columns"
         LOOP
@@ -51,25 +51,25 @@ BEGIN
             "select" = array_append("select", CASE
                                                   WHEN "column" = ANY ("base_columns")
                                                       THEN format('CASE WHEN (t.*) IS NULL THEN b.%1$I ELSE t.%1$I END AS %1$I', "column")
-                                                  ELSE format('t.%1I', "column") END);
+                                                  ELSE format('t.%1$I', "column") END);
         END LOOP;
 
     -- создание представления с записями языка по-умолчанию
     -- %s - вставляется как простая строка
     -- %I - вставляется как идентификатора SQL, экранируется при необходимости
     -- LEFT JOIN tranrel - соединяем с имеющимися переводами
-    "query" = format('SELECT %1s FROM %2I b LEFT JOIN %3I t ON %4s AND b."default_lang" = t."lang"',
+    "query" = format('SELECT %1$s FROM %2$I b LEFT JOIN %3$I t ON %4$s AND b."default_lang" = t."lang"',
                      array_to_string("select", ', '),
                      "baserel"::REGCLASS,
                      "tranrel"::REGCLASS,
                      array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
-    EXECUTE format('CREATE VIEW %1s AS %2s;', "default_view_name", "query");
+    EXECUTE format('CREATE VIEW %1$s AS %2$s;', "default_view_name", "query");
 
     -- создание i18n_view
     -- далее d - таблица дефолтных значений, t - таблица переводов, l - таблица языков
 
     -- установка select, повторяет то, что выше
-    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'd.%1I';
+    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'd.%1$I';
     "select" = "select" || (("tran_columns" OPERATOR ( public.- ) "tran_pk_columns") OPERATOR ( public.<< ) 'CASE WHEN (t.*) IS NULL THEN d.%1$I ELSE t.%1$I END AS %1$I');
     -- lang - lang из таблицы langs, используется из объединения CROSS JOIN "langs"
     -- default_lang - запись с дефолтным языком
@@ -82,12 +82,12 @@ BEGIN
     -- WITH - общее табличное выражение с представлением из предыдущего запроса
     -- CROSS JOIN "langs" - соединение значения со всеми языками
     -- LEFT JOIN tranrel - соединение с имеющимися переводами
-    "query" = format('SELECT %1s FROM %2I d CROSS JOIN public."langs" l LEFT JOIN %3I t ON %4s AND l."lang" = t."lang"',
+    "query" = format('SELECT %1$s FROM %2$I d CROSS JOIN public."langs" l LEFT JOIN %3$I t ON %4$s AND l."lang" = t."lang"',
                      array_to_string("select", ', '),
                      "default_view_name"::REGCLASS,
                      "tranrel"::REGCLASS,
                      array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'd.%1$I = t.%1$I', ' AND '));
-    EXECUTE format('CREATE VIEW %1s AS %2s;', "view_name", "query");
+    EXECUTE format('CREATE VIEW %1$s AS %2$s;', "view_name", "query");
 
     -- создание триггеров
 
@@ -97,17 +97,17 @@ BEGIN
     "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "base_pk_columns" OPERATOR ( public.- ) "sn_columns";
 
     "columns" = "base_pk_columns" || "sn_columns" || "un_columns";
-    "base_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
+    "base_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                  "baserel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '));
     "columns" = "sn_columns" || "un_columns";
-    "base_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
+    "base_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                          "baserel"::REGCLASS,
                                          array_to_string(("base_pk_columns" || "columns") OPERATOR ( public.<< ) '%I', ', '),
                                          array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || ("columns" OPERATOR ( public.<< ) 'NEW.%I'), ', '));
 
     "columns" = "base_pk_columns" || "un_columns";
-    "base_update_query" = format('UPDATE %1I SET (%2s) = ROW (%3s) WHERE (%4s) = (%5s)',
+    "base_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
                                  "baserel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '),
                                  array_to_string("base_pk_columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
@@ -121,16 +121,16 @@ BEGIN
     ');
 
     "columns" = "tran_pk_columns" || "un_columns";
-    "tran_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
+    "tran_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '));
     "columns" = "base_pk_columns" || "un_columns";
-    "tran_default_insert_query" = format('INSERT INTO %1I (%2s) VALUES (%3s)',
+    "tran_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                          "tranrel"::REGCLASS,
                                          array_to_string(('{lang}'::TEXT[] || "columns") OPERATOR ( public.<< ) '%I', ', '), array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I'), ', '));
 
     "columns" = "tran_pk_columns" || "un_columns";
-    "tran_update_query" = format('UPDATE %1I SET (%2s) = ROW (%3s) WHERE (%4s) = (%5s)',
+    "tran_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '),
                                  array_to_string("tran_pk_columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
@@ -175,7 +175,7 @@ LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER;
         ', "insert_trigger_name",
-                   array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1I IS NULL', ' AND '),
+                   array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1$I IS NULL', ' AND '),
                    "base_default_insert_query", "base_insert_query",
                    "tran_new_query",
                    "tran_default_insert_query", "tran_insert_query",
@@ -183,8 +183,8 @@ SECURITY DEFINER;
     EXECUTE format('
             CREATE TRIGGER "i18n"
                 INSTEAD OF INSERT
-                ON %1s FOR EACH ROW
-            EXECUTE FUNCTION %2s ();
+                ON %1$s FOR EACH ROW
+            EXECUTE FUNCTION %2$s ();
         ', "view_name", "insert_trigger_name");
 
     EXECUTE format('
@@ -229,8 +229,8 @@ SECURITY DEFINER;
     EXECUTE format('
             CREATE TRIGGER "update"
                 INSTEAD OF UPDATE
-                ON %1s FOR EACH ROW
-            EXECUTE FUNCTION %2s ();
+                ON %1$s FOR EACH ROW
+            EXECUTE FUNCTION %2$s ();
         ', "view_name", "update_trigger_name");
 END
 $$
