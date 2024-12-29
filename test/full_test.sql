@@ -89,7 +89,6 @@ RETURNING *;
     DELETE FROM public.word_trans WHERE id = 100 AND lang IN ('ru', 'udm');
 */
 -- ## ok / UPDATE (original) WHERE (id) = (100) / update column of `untrans` / will 4 rows in `untrans`
--- TODO написать про эту ситуацию
 UPDATE public.i18n_words
 SET original = ('update (original)  where (id) = (100): ' || original)
 WHERE id = 100
@@ -158,7 +157,6 @@ RETURNING *;
     WHERE id = 100;
 */
 -- ## ok / UPDATE (is_tran, is_default_lang) WHERE (id, lang) = (100, 'ru') / not edit
--- TODO проблема
 UPDATE public.i18n_words
 SET is_tran         = FALSE, -- no edit
     is_default_lang = TRUE   -- no edit

@@ -218,7 +218,7 @@ BEGIN
     result.is_tran = TRUE;
     result.is_default_lang = (result.default_lang = result.lang) IS TRUE;
 
-    RETURN NEW;
+    RETURN result;
 END
 $trigger$
 LANGUAGE plpgsql
