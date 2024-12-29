@@ -52,6 +52,70 @@ FROM public.i18n_words;
 
 -- # UPDATE
 
+-- ok / UPDATE (title) WHERE (id) = (-100) / not exists
+UPDATE public.i18n_words
+SET title = ('update (title) where (id) = (-100): ' || title)
+WHERE id = -100
+RETURNING *;
+-- ok / UPDATE (title) WHERE (id) = (100) / update column of `trans`
+UPDATE public.i18n_words
+SET title = ('update (title) where (id) = (100): ' || title)
+WHERE id = 100
+RETURNING *;
+-- ok / UPDATE (description) WHERE (id) = (100) / update namesake column of `trans` and `untrans`
+UPDATE public.i18n_words
+SET description = ('update (description) where (id) = (100): ' || description)
+WHERE id = 100
+RETURNING *;
+-- ok / UPDATE (original) WHERE (id) = (100) / update column of `untrans`
+UPDATE public.i18n_words
+SET original = ('update (original)  where (id) = (100): ' || original)
+WHERE id = 100
+RETURNING *;
+-- error / UPDATE (lang) WHERE (id, lang) = (100, 'en-US') / language change is not supported
+UPDATE public.i18n_words
+SET lang = 'en'
+WHERE id = 100
+  AND lang = 'en-US'
+RETURNING *;
+-- error / UPDATE (id, lang) WHERE (id, lang) = (100, 'en-US') / language change is not supported
+UPDATE public.i18n_words
+SET id   = -100,
+    lang = 'en'
+WHERE id = 100
+  AND lang = 'en-US'
+RETURNING *;
+-- ok / UPDATE (id) WHERE (id, lang) = (100, 'en-US') / id change
+UPDATE public.i18n_words
+SET id = -100
+WHERE id = 100
+  AND lang = 'en-US'
+RETURNING *;
+-- ?????????????? / UPDATE (id) WHERE (id) = (100) / id change
+UPDATE public.i18n_words
+SET id = 100
+WHERE id = -100
+RETURNING *;
+-- ok / UPDATE (title, description) WHERE (id, lang) = (100, 'en-US') / update when there is record in `trans`
+UPDATE public.i18n_words
+SET title       = ('update (title, description) where (id, lang) = (100, ''en-US''): ' || title),
+    description = ('update (title, description) where (id, lang) = (100, ''en-US''): ' || description)
+WHERE id = 100
+  AND lang = 'en-US';
+-- ok / UPDATE (title, description) WHERE (id, lang) = (100, 'ru') / update when there is not record in `trans`
+UPDATE public.i18n_words
+SET title       = ('update (title, description) where (id, lang) = (100, ''ru''): ' || title),
+    description = ('update (title, description) where (id, lang) = (100, ''ru''): ' || description)
+WHERE id = 100
+  AND lang = 'ru';
+-- ok / UPDATE (is_tran, is_default_lang) WHERE (id, lang) = (100, 'ru') / not edit
+UPDATE public.i18n_words
+SET is_tran         = FALSE, -- no edit
+    is_default_lang = FALSE  -- no edit
+WHERE id = 100
+  AND lang = 'ru'
+RETURNING *;
+
 
 -- # DROP
 
