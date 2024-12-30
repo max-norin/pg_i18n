@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.get_i18n_default_view_name ("baserel" OID, "tranrel" OID)
+CREATE FUNCTION public.get_i18n_default_view_name ("baserel" REGCLASS, "tranrel" REGCLASS)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -13,7 +13,7 @@ STABLE -- функция не может модифицировать базу �
 RETURNS NULL ON NULL INPUT; -- функция всегда возвращает NULL, получив NULL в одном из аргументов
 
 
-CREATE OR REPLACE FUNCTION public.get_i18n_view_name ("baserel" OID, "tranrel" OID)
+CREATE FUNCTION public.get_i18n_view_name ("baserel" REGCLASS, "tranrel" REGCLASS)
     RETURNS TEXT
     AS $$
 BEGIN

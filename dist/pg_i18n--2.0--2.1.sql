@@ -1,7 +1,8 @@
 /*
 =================== NAMES ===================
 */
-CREATE OR REPLACE FUNCTION @extschema@.get_i18n_default_view_name ("baserel" OID, "tranrel" OID)
+DROP FUNCTION @extschema@.get_i18n_default_view_name (OID, OID);
+CREATE OR REPLACE FUNCTION @extschema@.get_i18n_default_view_name ("baserel" REGCLASS, "tranrel" REGCLASS)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -15,7 +16,8 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-CREATE OR REPLACE FUNCTION @extschema@.get_i18n_view_name ("baserel" OID, "tranrel" OID)
+DROP FUNCTION @extschema@.get_i18n_view_name (OID, OID);
+CREATE OR REPLACE FUNCTION @extschema@.get_i18n_view_name ("baserel" REGCLASS, "tranrel" REGCLASS)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -59,7 +61,8 @@ RETURNS NULL ON NULL INPUT;
 /*
 =================== I18N ===================
 */
-CREATE OR REPLACE PROCEDURE @extschema@.create_i18n_view("baserel" OID, "tranrel" OID)
+DROP FUNCTION @extschema@.create_i18n_view (OID, OID);
+CREATE PROCEDURE @extschema@.create_i18n_view("baserel" REGCLASS, "tranrel" REGCLASS)
     AS $$
 DECLARE
     "base_pk_columns"     CONSTANT TEXT[] = @extschema@.get_primary_key_columns("baserel");
