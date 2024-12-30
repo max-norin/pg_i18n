@@ -1,7 +1,7 @@
 /*
 =================== NAMES ===================
 */
-CREATE OR REPLACE FUNCTION  public.get_i18n_default_view_name ("baserel" OID, "tranrel" OID)
+CREATE OR REPLACE FUNCTION  @extschema@.get_i18n_default_view_name ("baserel" OID, "tranrel" OID)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -15,7 +15,7 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-CREATE OR REPLACE FUNCTION  public.get_i18n_view_name ("baserel" OID, "tranrel" OID)
+CREATE OR REPLACE FUNCTION  @extschema@.get_i18n_view_name ("baserel" OID, "tranrel" OID)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -29,9 +29,9 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-DROP FUNCTION IF EXISTS public.get_i18n_trigger_name (TEXT);
+DROP FUNCTION IF EXISTS @extschema@.get_i18n_trigger_name (TEXT);
 
-CREATE FUNCTION  public.get_i18n_insert_trigger_name ("viewname" TEXT)
+CREATE FUNCTION  @extschema@.get_i18n_insert_trigger_name ("viewname" TEXT)
     RETURNS TEXT
     AS $$
 DECLARE
@@ -44,7 +44,7 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-CREATE FUNCTION  public.get_i18n_update_trigger_name ("viewname" TEXT)
+CREATE FUNCTION  @extschema@.get_i18n_update_trigger_name ("viewname" TEXT)
     RETURNS TEXT
     AS $$
 DECLARE
@@ -59,16 +59,16 @@ RETURNS NULL ON NULL INPUT;
 /*
 =================== I18N ===================
 */
-CREATE OR REPLACE PROCEDURE public.create_i18n_view("baserel" OID, "tranrel" OID)
+CREATE OR REPLACE PROCEDURE @extschema@.create_i18n_view("baserel" OID, "tranrel" OID)
     AS $$
 DECLARE
-    "base_pk_columns"     CONSTANT TEXT[] = public.get_primary_key_columns("baserel");
-    "base_columns"        CONSTANT TEXT[] = public.get_columns("baserel");
+    "base_pk_columns"     CONSTANT TEXT[] = @extschema@.get_primary_key_columns("baserel");
+    "base_columns"        CONSTANT TEXT[] = @extschema@.get_columns("baserel");
     "tran_pk_columns"     CONSTANT TEXT[] = "base_pk_columns" || '{lang}'::TEXT[];
-    "tran_columns"        CONSTANT TEXT[] = public.get_columns("tranrel");
-    "default_view_name"   CONSTANT TEXT   = public.get_i18n_default_view_name("baserel", "tranrel");
-    "view_name"           CONSTANT TEXT   = public.get_i18n_view_name("baserel", "tranrel");
-    "sn_columns"          CONSTANT TEXT[] = (public.get_columns("baserel", FALSE) OPERATOR ( public.& ) public.get_columns("tranrel", FALSE)) OPERATOR ( public.- ) "base_pk_columns";
+    "tran_columns"        CONSTANT TEXT[] = @extschema@.get_columns("tranrel");
+    "default_view_name"   CONSTANT TEXT   = @extschema@.get_i18n_default_view_name("baserel", "tranrel");
+    "view_name"           CONSTANT TEXT   = @extschema@.get_i18n_view_name("baserel", "tranrel");
+    "sn_columns"          CONSTANT TEXT[] = (@extschema@.get_columns("baserel", FALSE) OPERATOR ( @extschema@.& ) @extschema@.get_columns("tranrel", FALSE)) OPERATOR ( @extschema@.- ) "base_pk_columns";
     "un_columns"                   TEXT[];
     "base_insert_query"            TEXT;
     "base_default_insert_query"    TEXT;
@@ -77,8 +77,8 @@ DECLARE
     "tran_insert_query"            TEXT;
     "tran_default_insert_query"    TEXT;
     "tran_update_query"            TEXT;
-    "insert_trigger_name" CONSTANT TEXT   = public.get_i18n_insert_trigger_name("view_name");
-    "update_trigger_name" CONSTANT TEXT   = public.get_i18n_update_trigger_name("view_name");
+    "insert_trigger_name" CONSTANT TEXT   = @extschema@.get_i18n_insert_trigger_name("view_name");
+    "update_trigger_name" CONSTANT TEXT   = @extschema@.get_i18n_update_trigger_name("view_name");
     "column"                       TEXT;
     "columns"                      TEXT[] = '{}';
     "select"                       TEXT[] = '{}';
@@ -91,8 +91,8 @@ BEGIN
         RAISE EXCEPTION USING MESSAGE = '"baserel" table must have primary keys';
     END IF;
 
-    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'b.%1$I';
-    FOREACH "column" IN ARRAY "tran_columns" OPERATOR ( public.- ) "tran_pk_columns"
+    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( @extschema@.- ) "tran_columns")) OPERATOR ( @extschema@.<< ) 'b.%1$I';
+    FOREACH "column" IN ARRAY "tran_columns" OPERATOR ( @extschema@.- ) "tran_pk_columns"
         LOOP
             "select" = array_append("select", CASE
                                                   WHEN "column" = ANY ("base_columns")
@@ -104,59 +104,59 @@ BEGIN
                      array_to_string("select", ', '),
                      "baserel"::REGCLASS,
                      "tranrel"::REGCLASS,
-                     array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'b.%1$I = t.%1$I', ' AND '));
+                     array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) 'b.%1$I = t.%1$I', ' AND '));
     EXECUTE format('CREATE VIEW %1$s AS %2$s;', "default_view_name", "query");
 
-    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( public.- ) "tran_columns")) OPERATOR ( public.<< ) 'd.%1$I';
-    "select" = "select" || (("tran_columns" OPERATOR ( public.- ) "tran_pk_columns") OPERATOR ( public.<< ) 'CASE WHEN (t.*) IS NULL THEN d.%1$I ELSE t.%1$I END AS %1$I');
+    "select" = ("base_pk_columns" || ("base_columns" OPERATOR ( @extschema@.- ) "tran_columns")) OPERATOR ( @extschema@.<< ) 'd.%1$I';
+    "select" = "select" || (("tran_columns" OPERATOR ( @extschema@.- ) "tran_pk_columns") OPERATOR ( @extschema@.<< ) 'CASE WHEN (t.*) IS NULL THEN d.%1$I ELSE t.%1$I END AS %1$I');
     "select" = ARRAY ['NOT ((t.*) IS NULL) AS "is_tran"', '(d."default_lang" = l."lang") IS TRUE AS "is_default_lang"', 'l."lang"'] || "select";
 
-    "query" = format('SELECT %1$s FROM %2$I d CROSS JOIN public."langs" l LEFT JOIN %3$I t ON %4$s AND l."lang" = t."lang"',
+    "query" = format('SELECT %1$s FROM %2$I d CROSS JOIN @extschema@."langs" l LEFT JOIN %3$I t ON %4$s AND l."lang" = t."lang"',
                      array_to_string("select", ', '),
                      "default_view_name"::REGCLASS,
                      "tranrel"::REGCLASS,
-                     array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'd.%1$I = t.%1$I', ' AND '));
+                     array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) 'd.%1$I = t.%1$I', ' AND '));
     EXECUTE format('CREATE VIEW %1$s AS %2$s;', "view_name", "query");
 
-    "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "base_pk_columns" OPERATOR ( public.- ) "sn_columns";
+    "un_columns" = @extschema@.get_columns("baserel", FALSE) OPERATOR ( @extschema@.- ) "base_pk_columns" OPERATOR ( @extschema@.- ) "sn_columns";
 
     "columns" = "base_pk_columns" || "sn_columns" || "un_columns";
     "base_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '));
+                                 array_to_string("columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( @extschema@.<< ) 'NEW.%I', ', '));
     "columns" = "sn_columns" || "un_columns";
     "base_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                          "baserel"::REGCLASS,
-                                         array_to_string(("base_pk_columns" || "columns") OPERATOR ( public.<< ) '%I', ', '),
-                                         array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || ("columns" OPERATOR ( public.<< ) 'NEW.%I'), ', '));
+                                         array_to_string(("base_pk_columns" || "columns") OPERATOR ( @extschema@.<< ) '%I', ', '),
+                                         array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || ("columns" OPERATOR ( @extschema@.<< ) 'NEW.%I'), ', '));
 
     "columns" = "base_pk_columns" || "un_columns";
     "base_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
                                  "baserel"::REGCLASS,
-                                 array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '),
-                                 array_to_string("base_pk_columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
+                                 array_to_string("columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( @extschema@.<< ) 'NEW.%I', ', '),
+                                 array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) 'OLD.%I', ', '));
 
-    "un_columns" = public.get_columns("tranrel", FALSE) OPERATOR ( public.- ) "tran_pk_columns";
+    "un_columns" = @extschema@.get_columns("tranrel", FALSE) OPERATOR ( @extschema@.- ) "tran_pk_columns";
 
-    "tran_new_query" = array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'TRAN_NEW.%1$I = base.%1$I;', '
+    "tran_new_query" = array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) 'TRAN_NEW.%1$I = base.%1$I;', '
     ');
 
     "columns" = "tran_pk_columns" || "un_columns";
     "tran_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '),
-                                 array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '));
+                                 array_to_string("columns" OPERATOR ( @extschema@.<< ) '%I', ', '),
+                                 array_to_string("columns" OPERATOR ( @extschema@.<< ) 'TRAN_NEW.%I', ', '));
     "columns" = "base_pk_columns" || "un_columns";
     "tran_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
                                          "tranrel"::REGCLASS,
-                                         array_to_string(('{lang}'::TEXT[] || "columns") OPERATOR ( public.<< ) '%I', ', '),
-                                         array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I'), ', '));
+                                         array_to_string(('{lang}'::TEXT[] || "columns") OPERATOR ( @extschema@.<< ) '%I', ', '),
+                                         array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( @extschema@.<< ) 'TRAN_NEW.%I'), ', '));
 
     "columns" = "tran_pk_columns" || "un_columns";
     "tran_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
                                  "tranrel"::REGCLASS,
-                                 array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '),
-                                 array_to_string("tran_pk_columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
+                                 array_to_string("columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( @extschema@.<< ) 'TRAN_NEW.%I', ', '),
+                                 array_to_string("tran_pk_columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("tran_pk_columns" OPERATOR ( @extschema@.<< ) 'OLD.%I', ', '));
 
     EXECUTE format('
 CREATE FUNCTION %1$s ()
@@ -198,7 +198,7 @@ LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER;
         ', "insert_trigger_name",
-                   array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'NEW.%1$I IS NULL', ' AND '),
+                   array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) 'NEW.%1$I IS NULL', ' AND '),
                    "base_default_insert_query", "base_insert_query",
                    "tran_new_query",
                    "tran_default_insert_query", "tran_insert_query",
@@ -258,7 +258,7 @@ VOLATILE
 SECURITY DEFINER;
         ', "update_trigger_name",
                    "base_update_query",
-                   array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'base.%1$I IS NULL', ' AND '),
+                   array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) 'base.%1$I IS NULL', ' AND '),
                    "tran_new_query",
                    "tran_update_query", "tran_insert_query",
                    "view_name");
@@ -274,7 +274,7 @@ LANGUAGE plpgsql;
 /*
 =================== DROP ===================
 */
-CREATE OR REPLACE FUNCTION public.event_trigger_drop_i18n_triggers ()
+CREATE OR REPLACE FUNCTION @extschema@.event_trigger_drop_i18n_triggers ()
     RETURNS EVENT_TRIGGER
     AS $$
 DECLARE
@@ -293,14 +293,14 @@ BEGIN
             "table" = "object".address_names[2];
             "rel" = format('%1I.%2I', "schema", "table");
 
-            "name" = public.get_i18n_insert_trigger_name ("rel");
+            "name" = @extschema@.get_i18n_insert_trigger_name ("rel");
             IF (position('/* pg_i18n:insert-trigger */' IN lower(pg_get_functiondef(to_regproc("name"))))) > 0 THEN
                 "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
                 RAISE NOTICE USING MESSAGE = "query";
                 EXECUTE "query";
             END IF;
 
-            "name" = public.get_i18n_update_trigger_name ("rel");
+            "name" = @extschema@.get_i18n_update_trigger_name ("rel");
             IF (position('/* pg_i18n:update-trigger */' IN lower(pg_get_functiondef(to_regproc("name"))))) > 0 THEN
                 "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
                 RAISE NOTICE USING MESSAGE = "query";
@@ -318,4 +318,4 @@ VOLATILE;
 DROP EVENT TRIGGER "drop_i18n_triggers";
 CREATE EVENT TRIGGER "drop_i18n_triggers" ON sql_drop
     WHEN TAG IN ('DROP TABLE', 'DROP VIEW')
-EXECUTE PROCEDURE public.event_trigger_drop_i18n_triggers ();
+EXECUTE PROCEDURE @extschema@.event_trigger_drop_i18n_triggers ();
