@@ -110,7 +110,7 @@ RETURNS NULL ON NULL INPUT;
 /*
 =================== I18N ===================
 */
-DROP FUNCTION @extschema@.create_i18n_view (OID, OID);
+DROP PROCEDURE @extschema@.create_i18n_view (OID, OID);
 CREATE PROCEDURE @extschema@.create_i18n_view("baserel" REGCLASS, "tranrel" REGCLASS)
     AS $$
 DECLARE
