@@ -75,18 +75,13 @@ DECLARE
     "table"                TEXT;
 BEGIN
     FOR "object" IN
-    -- описание значений переменной object
-    -- https://www.postgresql.org/docs/current/functions-event-triggers.html#PG-EVENT-TRIGGER-SQL-DROP-FUNCTIONS
     SELECT * FROM pg_event_trigger_dropped_objects()
     LOOP
-        -- удаление представления i18n
         IF "object".object_type = 'view' THEN
             "schema" = "object".address_names[1];
             "table" = "object".address_names[2];
-            -- получение названия удалённого представления
             "rel" = format('%1I.%2I', "schema", "table");
 
-            -- получение названия удаляемого триггера insert
             "name" = public.get_i18n_insert_trigger_name ("rel");
             IF (position('/* pg_i18n:insert-trigger */' IN lower(pg_get_functiondef(to_regproc("name"))))) > 0 THEN
                 "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
@@ -94,7 +89,6 @@ BEGIN
                 EXECUTE "query";
             END IF;
 
-            -- получение названия удаляемого триггера
             "name" = public.get_i18n_update_trigger_name ("rel");
             IF (position('/* pg_i18n:update-trigger */' IN lower(pg_get_functiondef(to_regproc("name"))))) > 0 THEN
                 "query" = format('DROP FUNCTION IF EXISTS %1s RESTRICT;', "name");
