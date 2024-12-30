@@ -1,7 +1,7 @@
 /*
 =================== NAMES ===================
 */
-CREATE OR REPLACE FUNCTION  @extschema@.get_i18n_default_view_name ("baserel" OID, "tranrel" OID)
+CREATE OR REPLACE FUNCTION @extschema@.get_i18n_default_view_name ("baserel" OID, "tranrel" OID)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -15,7 +15,7 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-CREATE OR REPLACE FUNCTION  @extschema@.get_i18n_view_name ("baserel" OID, "tranrel" OID)
+CREATE OR REPLACE FUNCTION @extschema@.get_i18n_view_name ("baserel" OID, "tranrel" OID)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -31,7 +31,7 @@ RETURNS NULL ON NULL INPUT;
 
 DROP FUNCTION IF EXISTS @extschema@.get_i18n_trigger_name (TEXT);
 
-CREATE FUNCTION  @extschema@.get_i18n_insert_trigger_name ("viewname" TEXT)
+CREATE FUNCTION @extschema@.get_i18n_insert_trigger_name ("viewname" TEXT)
     RETURNS TEXT
     AS $$
 DECLARE
@@ -44,7 +44,7 @@ LANGUAGE plpgsql
 STABLE
 RETURNS NULL ON NULL INPUT;
 
-CREATE FUNCTION  @extschema@.get_i18n_update_trigger_name ("viewname" TEXT)
+CREATE FUNCTION @extschema@.get_i18n_update_trigger_name ("viewname" TEXT)
     RETURNS TEXT
     AS $$
 DECLARE
