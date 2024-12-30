@@ -25,10 +25,33 @@ STABLE
 RETURNS NULL ON NULL INPUT;
 COMMENT ON FUNCTION @extschema@.get_columns (REGCLASS, BOOLEAN) IS 'get table columns';
 /*
+=================== GET_PRIMARY_KEY_COLUMNS ===================
+*/
+DROP FUNCTION @extschema@.get_primary_key_columns (OID);
+CREATE FUNCTION @extschema@.get_primary_key_columns ("relid" REGCLASS)
+    RETURNS TEXT
+    AS $$
+BEGIN
+
+
+    RETURN (
+        SELECT array_agg(a."attname")
+        FROM "pg_index" i
+            INNER JOIN "pg_attribute" a ON i."indrelid" = a."attrelid"
+                AND a."attnum" = ANY (i."indkey")
+        WHERE i."indrelid" = "relid"
+            AND i."indisprimary");
+END
+$$
+LANGUAGE plpgsql
+STABLE
+RETURNS NULL ON NULL INPUT;
+COMMENT ON FUNCTION @extschema@.get_primary_key_columns (REGCLASS) IS 'get table primary key columns';
+/*
 =================== NAMES ===================
 */
 DROP FUNCTION @extschema@.get_i18n_default_view_name (OID, OID);
-CREATE OR REPLACE FUNCTION @extschema@.get_i18n_default_view_name ("baserel" REGCLASS, "tranrel" REGCLASS)
+CREATE FUNCTION @extschema@.get_i18n_default_view_name ("baserel" REGCLASS, "tranrel" REGCLASS)
     RETURNS TEXT
     AS $$
 BEGIN
@@ -43,7 +66,7 @@ STABLE
 RETURNS NULL ON NULL INPUT;
 
 DROP FUNCTION @extschema@.get_i18n_view_name (OID, OID);
-CREATE OR REPLACE FUNCTION @extschema@.get_i18n_view_name ("baserel" REGCLASS, "tranrel" REGCLASS)
+CREATE FUNCTION @extschema@.get_i18n_view_name ("baserel" REGCLASS, "tranrel" REGCLASS)
     RETURNS TEXT
     AS $$
 BEGIN
