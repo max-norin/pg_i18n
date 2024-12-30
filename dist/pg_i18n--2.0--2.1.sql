@@ -1,4 +1,11 @@
 /*
+=================== DOMAIN_CHECK_FUNCTIONS ===================
+*/
+ALTER FUNCTION @extschema@.lang_rule(TEXT) RENAME TO lang;
+ALTER FUNCTION @extschema@.language_rule(TEXT) RENAME TO language;
+ALTER FUNCTION @extschema@.region_rule(TEXT) RENAME TO region;
+ALTER FUNCTION @extschema@.script_rule(TEXT) RENAME TO script;
+/*
 =================== GET_COLUMNS ===================
 */
 DROP FUNCTION @extschema@.get_columns (OID, BOOLEAN, TEXT);
