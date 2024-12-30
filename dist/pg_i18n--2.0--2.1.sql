@@ -1,4 +1,30 @@
 /*
+=================== GET_COLUMNS ===================
+*/
+DROP FUNCTION @extschema@.get_columns (OID, BOOLEAN, TEXT);
+CREATE FUNCTION  @extschema@.get_columns ("relid" REGCLASS, "has_generated_column" BOOLEAN = TRUE)
+    RETURNS TEXT[]
+    AS $$
+BEGIN
+
+    RETURN (
+        SELECT array_agg(a."attname")
+        FROM "pg_attribute" AS a
+        WHERE "attrelid" = "relid"
+
+
+            AND a."attnum" > 0
+
+            AND ("has_generated_column" OR a.attgenerated = '')
+
+            AND NOT a.attisdropped);
+END
+$$
+LANGUAGE plpgsql
+STABLE
+RETURNS NULL ON NULL INPUT;
+COMMENT ON FUNCTION @extschema@.get_columns (REGCLASS, BOOLEAN) IS 'get table columns';
+/*
 =================== NAMES ===================
 */
 DROP FUNCTION @extschema@.get_i18n_default_view_name (OID, OID);
