@@ -124,11 +124,16 @@ RETURNING *;
     # check
     SELECT * FROM public.i18n_words WHERE id = 100;
 */
--- ## ?????????????? / UPDATE (id) WHERE (id) = (100) / id change
--- TODO проблема
+-- ## error / UPDATE (id) WHERE (id) = (100) / id change
 UPDATE public.i18n_words
 SET id = 100
 WHERE id = -100
+RETURNING *;
+-- ## ok / UPDATE (id) WHERE (id, lang) = (100, 'it') / id change
+UPDATE public.i18n_words
+SET id = 100
+WHERE id = -100
+  AND lang = 'it'
 RETURNING *;
 -- ## ok / UPDATE (title, description) WHERE (id, lang) = (100, 'en-US') / update when there is record in `trans`
 UPDATE public.i18n_words

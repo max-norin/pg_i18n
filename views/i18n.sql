@@ -165,7 +165,7 @@ BEGIN
         RAISE DEBUG USING MESSAGE = ''%7$s'';
         %7$s RETURNING * INTO tran;
     END IF;
-    -- update NEW
+    -- update result
     result = jsonb_populate_record(NULL::%8$s, to_jsonb(base) || to_jsonb(tran));
     result.is_tran = TRUE;
     result.is_default_lang = (result.default_lang = result.lang) IS TRUE;
@@ -200,21 +200,32 @@ DECLARE
     TRAN_NEW RECORD = NEW;
     result   RECORD;
 BEGIN
-    IF OLD.lang != NEW.lang THEN RAISE EXCEPTION USING MESSAGE = ''Updating `lang` is not supported.'', HINT = ''Remove change to column `lang` in query.''; END IF;
+    -- check updating lang
+    IF OLD.lang != NEW.lang THEN
+        RAISE EXCEPTION USING
+            MESSAGE = ''Updating `lang` is not supported.'',
+            HINT = ''Remove change to column `lang` in query.'';
+    END IF;
     -- untrans
     RAISE DEBUG USING MESSAGE = ''%2$s'';
     %2$s RETURNING * INTO base;
+    -- check primary key
+    IF %3$s THEN
+        RAISE EXCEPTION USING
+            MESSAGE = ''Updating table inherited from `untruns` does not return result'',
+            HINT = ''Most likely query contains change to primary key in several rows. Primary key can only be changed in one row.'';
+    END IF;
     -- trans
-    %3$s
+    %4$s
     IF OLD.is_tran THEN
-        RAISE DEBUG USING MESSAGE = ''%4$s'';
-        %4$s RETURNING * INTO tran;
-    ELSE
         RAISE DEBUG USING MESSAGE = ''%5$s'';
         %5$s RETURNING * INTO tran;
+    ELSE
+        RAISE DEBUG USING MESSAGE = ''%6$s'';
+        %6$s RETURNING * INTO tran;
     END IF;
-    -- update NEW
-    result = jsonb_populate_record(NULL::%6$s, to_jsonb(base) || to_jsonb(tran));
+    -- update result
+    result = jsonb_populate_record(NULL::%7$s, to_jsonb(base) || to_jsonb(tran));
     result.is_tran = TRUE;
     result.is_default_lang = (result.default_lang = result.lang) IS TRUE;
 
@@ -226,6 +237,7 @@ VOLATILE
 SECURITY DEFINER;
         ', "update_trigger_name",
                    "base_update_query",
+                   array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'base.%1$I IS NULL', ' AND '),
                    "tran_new_query",
                    "tran_update_query", "tran_insert_query",
                    "view_name");
