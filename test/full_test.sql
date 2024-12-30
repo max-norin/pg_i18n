@@ -1,12 +1,12 @@
 -- insert languages
-INSERT INTO langs (language, script, region, is_active, title)
+INSERT INTO public.langs (language, script, region, is_active, title)
 VALUES ('ru', NULL, NULL, TRUE, 'Русский'),
        ('udm', NULL, NULL, TRUE, 'Удмурт'),
        ('en', NULL, 'US', TRUE, 'English'),
        ('it', NULL, NULL, TRUE, 'Italiano');
 
 -- error
-CALL create_i18n_view(NULL::regclass, NULL::regclass);
+CALL public.create_i18n_view(NULL::regclass, NULL::regclass);
 
 -- create i18n_words
 CREATE TABLE public.words
@@ -22,7 +22,7 @@ CREATE TABLE public.word_trans
     title       VARCHAR(255), -- translation of title into language lang
     description VARCHAR(255)
 ) INHERITS (public.trans);
-CALL create_i18n_view('public.words'::REGCLASS, 'public.word_trans'::REGCLASS);
+CALL public.create_i18n_view('public.words'::REGCLASS, 'public.word_trans'::REGCLASS);
 
 
 -- # INSERT
