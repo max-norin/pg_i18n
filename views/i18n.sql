@@ -1,5 +1,5 @@
 -- создание представления c возможность редактирования
-CREATE OR REPLACE PROCEDURE public.create_i18n_view("baserel" OID, "tranrel" OID) AS
+CREATE PROCEDURE public.create_i18n_view("baserel" REGCLASS, "tranrel" REGCLASS) AS
 $$
 DECLARE
     -- для создания представлений
@@ -58,7 +58,7 @@ BEGIN
     -- %s - вставляется как простая строка
     -- %I - вставляется как идентификатора SQL, экранируется при необходимости
     -- LEFT JOIN tranrel - соединяем с имеющимися переводами
-    "query" = format('SELECT %1$s FROM %2$I b LEFT JOIN %3$I t ON %4$s AND b."default_lang" = t."lang"',
+    "query" = format('SELECT %1$s FROM %2$s b LEFT JOIN %3$s t ON %4$s AND b."default_lang" = t."lang"',
                      array_to_string("select", ', '),
                      "baserel"::REGCLASS,
                      "tranrel"::REGCLASS,
@@ -82,7 +82,7 @@ BEGIN
     -- WITH - общее табличное выражение с представлением из предыдущего запроса
     -- CROSS JOIN "langs" - соединение значения со всеми языками
     -- LEFT JOIN tranrel - соединение с имеющимися переводами
-    "query" = format('SELECT %1$s FROM %2$I d CROSS JOIN public."langs" l LEFT JOIN %3$I t ON %4$s AND l."lang" = t."lang"',
+    "query" = format('SELECT %1$s FROM %2$s d CROSS JOIN public."langs" l LEFT JOIN %3$s t ON %4$s AND l."lang" = t."lang"',
                      array_to_string("select", ', '),
                      "default_view_name"::REGCLASS,
                      "tranrel"::REGCLASS,
@@ -97,17 +97,17 @@ BEGIN
     "un_columns" = public.get_columns("baserel", FALSE) OPERATOR ( public.- ) "base_pk_columns" OPERATOR ( public.- ) "sn_columns";
 
     "columns" = "base_pk_columns" || "sn_columns" || "un_columns";
-    "base_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
+    "base_insert_query" = format('INSERT INTO %1$s (%2$s) VALUES (%3$s)',
                                  "baserel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '));
     "columns" = "sn_columns" || "un_columns";
-    "base_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
+    "base_default_insert_query" = format('INSERT INTO %1$s (%2$s) VALUES (%3$s)',
                                          "baserel"::REGCLASS,
                                          array_to_string(("base_pk_columns" || "columns") OPERATOR ( public.<< ) '%I', ', '),
                                          array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || ("columns" OPERATOR ( public.<< ) 'NEW.%I'), ', '));
 
     "columns" = "base_pk_columns" || "un_columns";
-    "base_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
+    "base_update_query" = format('UPDATE %1$s SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
                                  "baserel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'NEW.%I', ', '),
                                  array_to_string("base_pk_columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("base_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));
@@ -121,18 +121,18 @@ BEGIN
     ');
 
     "columns" = "tran_pk_columns" || "un_columns";
-    "tran_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
+    "tran_insert_query" = format('INSERT INTO %1$s (%2$s) VALUES (%3$s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '),
                                  array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '));
     "columns" = "base_pk_columns" || "un_columns";
-    "tran_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
+    "tran_default_insert_query" = format('INSERT INTO %1$s (%2$s) VALUES (%3$s)',
                                          "tranrel"::REGCLASS,
                                          array_to_string(('{lang}'::TEXT[] || "columns") OPERATOR ( public.<< ) '%I', ', '),
                                          array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I'), ', '));
 
     "columns" = "tran_pk_columns" || "un_columns";
-    "tran_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
+    "tran_update_query" = format('UPDATE %1$s SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( public.<< ) 'TRAN_NEW.%I', ', '),
                                  array_to_string("tran_pk_columns" OPERATOR ( public.<< ) '%I', ', '), array_to_string("tran_pk_columns" OPERATOR ( public.<< ) 'OLD.%I', ', '));

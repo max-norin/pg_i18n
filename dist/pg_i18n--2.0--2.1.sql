@@ -183,7 +183,7 @@ BEGIN
                                                   ELSE format('t.%1$I', "column") END);
         END LOOP;
 
-    "query" = format('SELECT %1$s FROM %2$I b LEFT JOIN %3$I t ON %4$s AND b."default_lang" = t."lang"',
+    "query" = format('SELECT %1$s FROM %2$s b LEFT JOIN %3$s t ON %4$s AND b."default_lang" = t."lang"',
                      array_to_string("select", ', '),
                      "baserel"::REGCLASS,
                      "tranrel"::REGCLASS,
@@ -194,7 +194,7 @@ BEGIN
     "select" = "select" || (("tran_columns" OPERATOR ( @extschema@.- ) "tran_pk_columns") OPERATOR ( @extschema@.<< ) 'CASE WHEN (t.*) IS NULL THEN d.%1$I ELSE t.%1$I END AS %1$I');
     "select" = ARRAY ['NOT ((t.*) IS NULL) AS "is_tran"', '(d."default_lang" = l."lang") IS TRUE AS "is_default_lang"', 'l."lang"'] || "select";
 
-    "query" = format('SELECT %1$s FROM %2$I d CROSS JOIN @extschema@."langs" l LEFT JOIN %3$I t ON %4$s AND l."lang" = t."lang"',
+    "query" = format('SELECT %1$s FROM %2$s d CROSS JOIN @extschema@."langs" l LEFT JOIN %3$s t ON %4$s AND l."lang" = t."lang"',
                      array_to_string("select", ', '),
                      "default_view_name"::REGCLASS,
                      "tranrel"::REGCLASS,
@@ -204,17 +204,17 @@ BEGIN
     "un_columns" = @extschema@.get_columns("baserel", FALSE) OPERATOR ( @extschema@.- ) "base_pk_columns" OPERATOR ( @extschema@.- ) "sn_columns";
 
     "columns" = "base_pk_columns" || "sn_columns" || "un_columns";
-    "base_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
+    "base_insert_query" = format('INSERT INTO %1$s (%2$s) VALUES (%3$s)',
                                  "baserel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( @extschema@.<< ) 'NEW.%I', ', '));
     "columns" = "sn_columns" || "un_columns";
-    "base_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
+    "base_default_insert_query" = format('INSERT INTO %1$s (%2$s) VALUES (%3$s)',
                                          "baserel"::REGCLASS,
                                          array_to_string(("base_pk_columns" || "columns") OPERATOR ( @extschema@.<< ) '%I', ', '),
                                          array_to_string(array_fill('DEFAULT'::TEXT, ARRAY [array_length("base_pk_columns", 1)]) || ("columns" OPERATOR ( @extschema@.<< ) 'NEW.%I'), ', '));
 
     "columns" = "base_pk_columns" || "un_columns";
-    "base_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
+    "base_update_query" = format('UPDATE %1$s SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
                                  "baserel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( @extschema@.<< ) 'NEW.%I', ', '),
                                  array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("base_pk_columns" OPERATOR ( @extschema@.<< ) 'OLD.%I', ', '));
@@ -225,18 +225,18 @@ BEGIN
     ');
 
     "columns" = "tran_pk_columns" || "un_columns";
-    "tran_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
+    "tran_insert_query" = format('INSERT INTO %1$s (%2$s) VALUES (%3$s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( @extschema@.<< ) '%I', ', '),
                                  array_to_string("columns" OPERATOR ( @extschema@.<< ) 'TRAN_NEW.%I', ', '));
     "columns" = "base_pk_columns" || "un_columns";
-    "tran_default_insert_query" = format('INSERT INTO %1$I (%2$s) VALUES (%3$s)',
+    "tran_default_insert_query" = format('INSERT INTO %1$s (%2$s) VALUES (%3$s)',
                                          "tranrel"::REGCLASS,
                                          array_to_string(('{lang}'::TEXT[] || "columns") OPERATOR ( @extschema@.<< ) '%I', ', '),
                                          array_to_string('{DEFAULT}'::TEXT[] || ("columns" OPERATOR ( @extschema@.<< ) 'TRAN_NEW.%I'), ', '));
 
     "columns" = "tran_pk_columns" || "un_columns";
-    "tran_update_query" = format('UPDATE %1$I SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
+    "tran_update_query" = format('UPDATE %1$s SET (%2$s) = ROW (%3$s) WHERE (%4$s) = (%5$s)',
                                  "tranrel"::REGCLASS,
                                  array_to_string("columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("columns" OPERATOR ( @extschema@.<< ) 'TRAN_NEW.%I', ', '),
                                  array_to_string("tran_pk_columns" OPERATOR ( @extschema@.<< ) '%I', ', '), array_to_string("tran_pk_columns" OPERATOR ( @extschema@.<< ) 'OLD.%I', ', '));
@@ -351,7 +351,7 @@ SECURITY DEFINER;
                 ON %1$s FOR EACH ROW
             EXECUTE FUNCTION %2$s ();
         ', "view_name", "update_trigger_name");
-END;
+END
 $$
 LANGUAGE plpgsql;
 /*
