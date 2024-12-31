@@ -1,5 +1,5 @@
 CREATE DOMAIN public.REGION AS VARCHAR(2)
-CHECK (public.region_rule (VALUE));
+CHECK (public.region (VALUE));
 
 COMMENT ON DOMAIN public.REGION IS 'ISO 3166-1';
 

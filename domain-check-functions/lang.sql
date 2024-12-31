@@ -11,9 +11,9 @@ BEGIN
     IF ("length" IS NULL OR "length" > 3) THEN
         RETURN FALSE;
     END IF;
-    RETURN ("has_language" AND public.language_rule("arr"[1])) AND
-           (NOT ("has_script") OR (public.script_rule("arr"[2]) OR (public.region_rule("arr"[2]) AND NOT "has_region"))) AND
-           (NOT ("has_region") OR public.region_rule("arr"[3]));
+    RETURN ("has_language" AND public.language("arr"[1])) AND
+           (NOT ("has_script") OR (public.script("arr"[2]) OR (public.region("arr"[2]) AND NOT "has_region"))) AND
+           (NOT ("has_region") OR public.region("arr"[3]));
 END
 $$
 LANGUAGE plpgsql

@@ -1,5 +1,5 @@
 CREATE DOMAIN public.LANG AS VARCHAR(11)
-CHECK (public.lang_rule (VALUE));
+CHECK (public.lang (VALUE));
 
 COMMENT ON DOMAIN public.LANG IS 'RFC 5646';
 

@@ -1,5 +1,5 @@
 CREATE DOMAIN public.SCRIPT AS VARCHAR(4)
-CHECK (public.script_rule (VALUE));
+CHECK (public.script (VALUE));
 
 COMMENT ON DOMAIN public.SCRIPT IS 'ISO 15924';
 
